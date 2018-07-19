@@ -1,0 +1,16 @@
+## Cache files and folders
+*.pyc
+__pycache__
+*.egg-info/
+
+## Tests
+.pytest_cache
+.cache
+.coverage
+
+## Logs
+*.log
+*.log.*
+
+## Docs
+docs/_build/
