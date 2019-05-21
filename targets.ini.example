@@ -1,0 +1,6 @@
+[omnia]
+board = omnia
+serial = /dev/serial/by-path/pci-0000:00:00.0-usb-0:0.0.0:0.0-port0
+wan = nso_wan
+lan1 = nso_lan1
+lan2 = nso_lan2
