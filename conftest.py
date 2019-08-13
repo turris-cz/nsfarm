@@ -19,7 +19,7 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         "-C", "--targets-config",
-        help="Path to configuration file with targets.",
+        help="Path to configuration file with additional targets.",
         metavar="PATH",
     )
 
@@ -30,13 +30,12 @@ def pytest_configure(config):
         "markers", "board(boards): mark test to run only on specified board"
     )
     # Parse target configuration
-    target = config.getoption("-T")
-    target_config_file = config.getoption("-C")
-    if target_config_file is None:
-        # TODO some other default locations? Like in home?
-        target_config_file = os.path.join(config.rootdir, "targets.ini")
     targets = configparser.ConfigParser()
-    targets.read(os.path.join(target_config_file))
+    targets.read(os.path.expanduser("~/.nsfarm_targets.ini"))
+    targets.read(os.path.join(config.rootdir, "targets.ini"))
+    targets.read(config.getoption("-C") or ())
+    # Set target configuration
+    target = config.getoption("-T")
     if target not in targets:
         raise Exception("No configuration for target: {}".format(target))
     setattr(config, "target_config", targets[target])
