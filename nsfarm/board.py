@@ -2,8 +2,13 @@
 """
 import os
 import serial
+import serial.tools.miniterm
 from pexpect import fdpexpect
 from . import cli
+
+MINITERM_DEFAULT_EXIT = '\x1d'  # Ctrl+]
+MINITERM_DEFAULT_MENU = '\x14'  # Ctrl+T
+MINITERM_ENCODING = sys.getdefaultencoding()
 
 
 class Board():
@@ -42,6 +47,29 @@ class Board():
         """Returns pexpect handle to serial TTY interface.
         """
         return self.pexpect
+
+    def serial_miniterm(self):
+        """Runs interactive miniterm on serial TTY interface.
+
+        This can be used only if you disable capture in pytest (--capture=no).
+        """
+        miniterm = serial.tools.miniterm.Miniterm(self.serial)
+        miniterm.exit_character = MINITERM_DEFAULT_EXIT
+        miniterm.menu_character = MINITERM_DEFAULT_MENU
+        miniterm.set_rx_encoding(MINITERM_ENCODING)
+        miniterm.set_tx_encoding(MINITERM_ENCODING)
+
+        sys.stderr.write('\n')
+        sys.stderr.write('--- Miniterm on {p.name} ---\n'.format(p=miniterm.serial))
+        sys.stderr.write('--- Quit: {0} | Menu: {1} | Help: {1} followed by {2} ---\n'.format(
+            serial.tools.miniterm.key_description(miniterm.exit_character),
+            serial.tools.miniterm.key_description(miniterm.menu_character),
+            serial.tools.miniterm.key_description('\x08')))
+
+        miniterm.start()
+        miniterm.join()
+
+        sys.stderr.write("\n--- Miniterm exit ---\n")
 
 
 class Mox(Board):
