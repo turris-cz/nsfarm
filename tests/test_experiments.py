@@ -1,10 +1,10 @@
 import pytest
-import pexpect
 
 
 @pytest.mark.board("omnia")
-def test_help(board_uboot):
+def test_help(board, board_uboot):
     assert board_uboot.run("help")
+    board.serial_miniterm()
 
 
 def test_date(board_uboot):

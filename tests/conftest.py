@@ -1,32 +1,33 @@
 import pytest
-from nsfarm import cli, board
+import nsfarm.board
+import nsfarm.cli
+
 
 @pytest.fixture(scope="session")
-def board_on(request):
+def board(request):
     """Brings board on. Nothing else.
-    This is top most fixture for board.
+    This is top most fixture for board. It returns board handle.
     """
-    brd = board.get_board(request.config)
-    # TODO if we have power switch use it here
-    request.addfinalizer(lambda: brd.reset(True))
+    brd = nsfarm.board.get_board(request.config)
+    brd.power(True)
+    request.addfinalizer(lambda: brd.power(False))
     return brd
 
 
 @pytest.fixture(scope="session")
-def board_uboot(board_on):
+def board_uboot(request, board):
     """Boot board to u-boot prompt.
+    Provides instance of nsfarm.cli.Uboot()
     """
-    board_on.reset(False)
-    pexp = board_on.serial_pexpect()
-    pexp.expect_exact(["Hit any key to stop autoboot: ", ])
-    pexp.sendline("")
-    uboot = cli.Uboot(pexp)
-    assert uboot.prompt()
-    return uboot
+    request.addfinalizer(lambda: board.reset(True))
+    return board.uboot()
 
 
-@pytest.fixture
-def wan_isp(request):
-    "Container on WAN port simulating ISP (providing internet connection)."
-    # TODO
-    pass
+@pytest.fixture(scope="session")
+def board_shell(request, board):
+    """Boot board to Shell.
+    Provides instance of nsfarm.cli.Shell()
+    """
+    request.addfinalizer(lambda: board.reset(True))
+    # TODO prepare wan container with appropriate medkit
+    return board.bootup()

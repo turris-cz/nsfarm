@@ -1,6 +1,8 @@
 """This defines generic board and its helpers.
 """
 import os
+import sys
+import time
 import serial
 import serial.tools.miniterm
 from pexpect import fdpexpect
@@ -24,24 +26,49 @@ class Board():
         self.logfile = open("./{}.log".format(target), "wb")
         self.pexpect = fdpexpect.fdspawn(self.serial, logfile=self.logfile)
 
+    def power(self, state):
+        """Set power state.
+        """
+        self.serial.cst = state
+
+    def reset(self, state):
+        """Set reset pin state.
+        """
+        self.serial.rts = state
+
     def uboot(self):
         """Ensures that board is booted to u-boot and ready to accept u-boot
         commands.
 
         Returns instance of cli.Uboot
         """
-        # TODO reset pin and so on..
-        return cli.Uboot(self.pexpect)
+        # Restart board so we are sure that we are running U-Boot
+        self.reset(True)
+        time.sleep(0.001)
+        self.reset(False)
+        # Now wait for U-Boot hint to get CLI
+        self.pexpect.expect_exact(["Hit any key to stop autoboot: ", ])
+        self.pexpect.sendline("")
+        uboot_cli = cli.Uboot(self.pexpect)
+        assert uboot_cli.prompt()  # Match first prompt
+        return uboot_cli
 
-    def system(self, medkit):
-        """Ensures that board runs system from given medkit and that shell is
-        accessible and ready to accept commands.
-        """
+    def bootup(self):
+        """Boot board using TFTP boot. This ensures that board is booted up and
+        ready to accept commands.
 
-    def reset(self, state):
-        """Set reset pin state.
+        Returns instance of cli.Shell
         """
-        self.serial.rts = state
+        # First get U-Boot prompt
+        uboot = self.uboot()
+        # Now load FIT image from TFTP
+        # TODO
+        # Wait for bootup
+        self.pexpect.expect_exact(["Router Turris successfully started.", ])
+        self.pexpect.sendline("")
+        shell = cli.Shell(self.pexpect)
+        assert shell.prompt()  # Match first prompt
+        return shell
 
     def serial_pexpect(self):
         """Returns pexpect handle to serial TTY interface.
