@@ -1,7 +1,6 @@
 import pytest
 
 
-@pytest.mark.board("omnia")
 def test_help(board, board_uboot):
     assert board_uboot.run("help")
     board.serial_miniterm()

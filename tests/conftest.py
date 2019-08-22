@@ -3,8 +3,8 @@ import nsfarm.board
 import nsfarm.cli
 
 
-@pytest.fixture(scope="session")
-def board(request):
+@pytest.fixture(scope="session", name="board", params=[pytest.param(None, marks=pytest.mark.serial)])
+def fixture_board(request):
     """Brings board on. Nothing else.
     This is top most fixture for board. It returns board handle.
     """

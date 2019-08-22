@@ -25,10 +25,6 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    # Add dynamic markers
-    config.addinivalue_line(
-        "markers", "board(boards): mark test to run only on specified board"
-    )
     # Parse target configuration
     targets = configparser.ConfigParser()
     targets.read(os.path.expanduser("~/.nsfarm_targets.ini"))
@@ -46,3 +42,6 @@ def pytest_runtest_setup(item):
     for boards in item.iter_markers(name="board"):
         if board not in boards.args:
             pytest.skip("test is not compatible with target: {}".format(board))
+    for conn in ("serial", "wan", "lan1", "lan2"):
+        if item.get_closest_marker(conn) is not None and conn not in item.config.target_config:
+            pytest.skip("test requires connection: {}".format(conn))
