@@ -1,0 +1,8 @@
+#!/bin/sh
+# This file is part of NSFarm
+# Call this script to block execution untill there is internet connection.
+
+echo waiting for network
+while ! ping -c 1 nic.cz >/dev/null 2>&1; do
+	sleep 1
+done

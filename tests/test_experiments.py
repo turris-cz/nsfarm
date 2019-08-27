@@ -14,3 +14,6 @@ def test_date(board_uboot):
 def test_skip(board_uboot):
     assert board_uboot.run("help")
     assert board_uboot.run("boot")
+
+
+#def test_access(
