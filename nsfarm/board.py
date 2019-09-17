@@ -49,9 +49,7 @@ class Board():
         # Now wait for U-Boot hint to get CLI
         self.pexpect.expect_exact(["Hit any key to stop autoboot: ", ])
         self.pexpect.sendline("")
-        uboot_cli = cli.Uboot(self.pexpect)
-        assert uboot_cli.prompt()  # Match first prompt
-        return uboot_cli
+        return cli.Uboot(self.pexpect)
 
     def bootup(self):
         """Boot board using TFTP boot. This ensures that board is booted up and
@@ -65,10 +63,8 @@ class Board():
         # TODO
         # Wait for bootup
         self.pexpect.expect_exact(["Router Turris successfully started.", ])
-        self.pexpect.sendline("")
-        shell = cli.Shell(self.pexpect)
-        assert shell.prompt()  # Match first prompt
-        return shell
+        # Note Shell sends new line which opens terminal for it
+        return cli.Shell(self.pexpect)
 
     def serial_pexpect(self):
         """Returns pexpect handle to serial TTY interface.

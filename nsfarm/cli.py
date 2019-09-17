@@ -12,8 +12,14 @@ class Console():
     """Generic console interface handler helper class.
     """
 
-    def __init__(self, pexpect_handle):
+    def __init__(self, pexpect_handle, flush=True):
         self._pe = pexpect_handle
+        if flush:
+            self.flush()
+
+    def __getattr__(self, name):
+        # Just propagate anything we do not implement to pexect handle
+        return getattr(self._pe, name)
 
     def cmd(self, cmd=""):
         """Run given command.
@@ -44,6 +50,17 @@ class Console():
         """Returns located match in previously matched output.
         """
         return self._pe.match.group(index).decode(sys.getdefaultencoding())
+
+    def flush(self):
+        """Flush all input.
+
+        This is handy if you don't know the state of console and you don't want
+        to read any old input. This is automatically called in init unless you
+        specify otherwise.
+        """
+        bufflen = 2048
+        while len(self._pe.read_nonblocking(bufflen)) == bufflen:
+            pass
 
 
 class Cli(Console):
@@ -79,17 +96,19 @@ class Shell(Cli):
     """Unix shell support class.
 
     This is tested to handle busybox and bash.
-    Known unsupported shell is dash.
     """
+    _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?)\$ '"
+    _NSF_PROMPT = r"\r\nnsfprompt:([0-9]+)($|#) "
     _INITIAL_PROMPTS = [
-        "root@[a-zA-Z0-9_-]*:",
+        r"\r\n\S+ ($|#) ",
+        r"\r\nbash-.+($|#) ",
+        r"\r\nroot@[a-zA-Z0-9_-]*:",
+        _NSF_PROMPT,
     ]
-    _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?):\w\$ '"
-    _NSF_PROMPT = "nsfprompt:([0-9]+):(.*)$ "
-    # TODO new line at the beginning of prompt?
+    # TODO compile prompt regexp to increase performance
 
-    def __init__(self, pexpect_handle):
-        super().__init__(pexpect_handle)
+    def __init__(self, pexpect_handle, flush=True):
+        super().__init__(pexpect_handle, flush=flush)
         # Firt check if we are on some sort of shell prompt
         self._pe.sendline()
         if not self.output(self._INITIAL_PROMPTS):
@@ -109,12 +128,17 @@ class Shell(Cli):
 class Uboot(Cli):
     """U-boot prompt support class.
     """
-    # TODO new line at the beginning of prompt?
-    _PROMPT = "=> "
+    _PROMPT = "\r\n=> "
     _EXIT_CODE_ECHO = "echo --$?--"
     _EXIT_CODE = "--([0-9]+)--"
+    # TODO compile exit code regexp to increase performance
 
-    # TODO maybe flush what is in pexpect up to now?
+    def __init__(self, pexpect_handle, flush=True):
+        super().__init__(pexpect_handle, flush=flush)
+        # Check if we are in U-boot prompt
+        if not self.run("true"):
+            # TODO better exception
+            raise Exception("Unable to locate Uboot prompt")
 
     def prompt(self, exit_code=0, **kwargs):
         if not self.output_exact(self._PROMPT, **kwargs):
