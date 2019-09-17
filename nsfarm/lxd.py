@@ -38,6 +38,9 @@ class NetInterface():
 class Container():
     """Generic container handle.
     """
+    DEFAULT_OPTS = {
+        "internet",
+    }
 
     def __init__(self, name):
         self.name = name
@@ -50,21 +53,28 @@ class Container():
             raise Exception("The file describing image is not executable: {}".format(self.fpath))
         if not os.path.isdir(self.dpath):
             self.dpath = None
+        # Read attributes from image script
+        with open(self.fpath) as file:
+            # This reads second line of file while initial hash
+            attrs = next(itertools.islice(file, 1, 2))[1:].split()
         # Get parent
         self.parent = None
         self.image_parent = None
-        with open(self.fpath) as file:
-            # This reads parent by reading second line of file while removing
-            # first column and at the end striping all white characters.
-            parent = next(itertools.islice(file, 1, 2))[1:].strip()
-        if parent.startswith("nsfarm:"):
-            self.parent = Container(parent[7:])
-        elif parent.startswith("images:"):
+        if attrs[0].startswith("nsfarm:"):
+            self.parent = Container(attrs[0][7:])
+        elif attrs[0].startswith("images:"):
             # Get remote image handle immediately
             _lxd_connect()
-            self.image_parent = _images_lxd.images.get_by_alias(parent[7:])
+            self.image_parent = _images_lxd.images.get_by_alias(attrs[0][7:])
         else:
             raise Exception("The file has parent from unknown source: {}: {}".format(parent_source, self.fpath))
+        # Parse options
+        self.opts = self.DEFAULT_OPTS.copy() if self.parent is None else self.parent.opts.copy()
+        for opt in attrs[1:]:
+            if opt.startswith("no-"):
+                self.opts.discard(opt[3:])
+            else:
+                self.opts.add(opt)
         # Calculate identity hash
         md5sum = hashlib.md5()
         if self.parent:

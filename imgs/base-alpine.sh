@@ -1,5 +1,5 @@
 #!/bin/sh
-#images:alpine/3.10/amd64
+# images:alpine/3.10/amd64
 ##################################################################################
 # Common base for most of the containers with minimal extension.
 # This mostly just adds bash as this is suppose to be only script written in plain
