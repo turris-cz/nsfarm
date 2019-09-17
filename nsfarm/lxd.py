@@ -5,9 +5,8 @@ import time
 import itertools
 import hashlib
 import logging
-import random
-import string
 import pylxd
+import pexpect
 
 IMAGES_SOURCE = "https://images.linuxcontainers.org"
 IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
@@ -160,23 +159,23 @@ class Container():
             container.delete()
 
     def prepare(self):
-        """Prepare container for this object.
-
-        This is done automatically when you try to start image but you can call
-        it explicitly as well. You would do that when you want to do some
-        modifications before you start container.
+        """Create and start container for this object.
         """
         if self.lxd_container is not None:
             return
         _lxd_connect()
         self.prepare_image()
+        # TODO we could somehow just let it create it and return from this
+        # method and wait later on when we realy need container.
         self.lxd_container = _lxd.containers.create({
             'name': self._container_name(),
+            'ephemeral': True,
             'source': {
                 'type': 'image',
                 'alias': self.image_alias,
             },
         }, wait=True)
+        self.lxd_container.start(wait=True)
 
     def cleanup(self):
         """Remove container if it exists.
@@ -186,10 +185,9 @@ class Container():
         """
         if self.lxd_container is None:
             return  # No cleanup is required
-        if self.lxd_container.status == "Running":
-            self.lxd_container.stop(wait=True)
-        self.lxd_container.delete()
+        self.lxd_container.stop()
         self.lxd_container = None
+        # Note: container is ephemeral so it is removed automatically after stop
 
     def __enter__(self):
         self.prepare()
@@ -197,6 +195,12 @@ class Container():
 
     def __exit__(self, etype, value, traceback):
         self.cleanup()
+
+    def pexpect(self, shell="/bin/sh"):
+        """Returns pexpect handle for shell in container.
+        """
+        assert self.lxd_container is not None
+        return pexpect.spawn('lxc', ["exec", self.lxd_container.name, shell])
 
 
 class BootContainer(Container):
