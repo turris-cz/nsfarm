@@ -4,52 +4,75 @@ This ensures systematic logging and access to terminals. We implement two
 special terminal types at the moment. We have support for shell and u-boot.
 They differ in a way how they handle prompt and methods they provide to user.
 """
-import sys
 import pexpect
 
 
-class Console():
-    """Generic console interface handler helper class.
+class Console:
+    """Extension for pexpect based handles.
+
+    It is designed to allow better usage in assert based statements.
     """
 
-    def __init__(self, pexpect_handle, flush=True):
+    def __init__(self, pexpect_handle):
         self._pe = pexpect_handle
-        if flush:
-            self.flush()
 
     def __getattr__(self, name):
         # Just propagate anything we do not implement to pexect handle
         return getattr(self._pe, name)
 
-    def cmd(self, cmd=""):
-        """Run given command.
-        """
-        self._pe.sendline(cmd)
+    def sexpect(self, pattern, **kwargs):
+        """Safe variant of pexpect expect method.
 
-    def output(self, pattern, **kwargs):
-        """Follow output until one of patterns is reached.
-        """
-        try:
-            self._pe.expect(pattern if isinstance(pattern, list) else [pattern, ], **kwargs)
-        except (pexpect.EOF, pexpect.TIMEOUT) as exc:
-            print("Command exc: {}".format(exc))  # TODO log error
-            return False
-        return True
+        pattern can be single string or list of patterns to match. Note that
+        this is extension to pexpect expect.
 
-    def output_exact(self, string, **kwargs):
-        """Follow output until exact match with one of given strings is found.
+        It returns matched pattern index + 1. When timeout or end of input was
+        reach then it returns 0. This allows it to be directly used in assert.
         """
+        patterns = [pexpect.TIMEOUT, ]
+        if isinstance(pattern, str):
+            patterns.append(pattern)
+        else:
+            patterns += pattern
         try:
-            self._pe.expect_exact(string if isinstance(string, list) else [string, ], **kwargs)
-        except (pexpect.EOF, pexpect.TIMEOUT) as exc:
-            print("Command exc: {}".format(exc))  # TODO log error
-            return False
-        return True
+            return self.expect(patterns, **kwargs)
+        except pexpect.EOF:
+            return 0
+
+    def sexpect_exact(self, string, **kwargs):
+        """Safe variant of pexpect expect_exact method.
+
+        string can be one string or list of string to match. Note that this is
+        extension compared to pexpect implementation.
+
+        It returns matched string index + 1. When timeout or end of input was
+        reach then it returns 0. This allows it to be directly used in assert.
+        """
+        strings = [pexpect.TIMEOUT, ]
+        if isinstance(string, str):
+            strings.append(string)
+        else:
+            strings += string
+        try:
+            return self.expect_exact(strings, **kwargs)
+        except pexpect.EOF:
+            return 0
 
     def match(self, index):
         """Returns located match in previously matched output.
         """
-        return self._pe.match.group(index).decode(sys.getdefaultencoding())
+        return self._pe.match.group(index).decode()
+
+    def cmd(self, cmd=""):
+        """Calls pexpect sendline and expect cmd.
+
+        This is handy when you are comunicating with console that echoes input
+        back. This effectively removes sent command from output.
+        """
+        self.sendline(cmd)
+        if not self.sexpect_exact(cmd + '\r\n'):
+            # TODO better exception
+            raise Exception("cmd used but terminal probably does not echoes.")
 
     def flush(self):
         """Flush all input.
@@ -59,18 +82,34 @@ class Console():
         specify otherwise.
         """
         bufflen = 2048
-        while len(self._pe.read_nonblocking(bufflen)) == bufflen:
+        while len(self.read_nonblocking(bufflen)) == bufflen:
             pass
 
 
 class Cli(Console):
-    """This is generic abstraction on top of Console for command line
+    """This is generic abstraction on top of pexpect for command line
     interface.
     """
+
+    def __init__(self, pexpect_handle, flush=True):
+        super().__init__(pexpect_handle)
+        if flush:
+            self.flush()
 
     def prompt(self, exit_code=0, **kwargs):
         """Follow output until prompt is reached and parse it.
         Exit code is verified against provided one.
+        """
+        raise NotImplementedError
+
+    @property
+    def output(self):
+        """All output before latest prompt.
+
+        This is everything not matched till prompt is located.
+        Note that this is for some implementations same as pexpect before but
+        in others it can differ so you should always use this property instead
+        of before.
         """
         raise NotImplementedError
 
@@ -98,11 +137,11 @@ class Shell(Cli):
     This is tested to handle busybox and bash.
     """
     _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?)\$ '"
-    _NSF_PROMPT = r"\r\nnsfprompt:([0-9]+)($|#) "
+    _NSF_PROMPT = r"(\r\n|^)nsfprompt:([0-9]+)($|#) "
     _INITIAL_PROMPTS = [
-        r"\r\n\S+ ($|#) ",
-        r"\r\nbash-.+($|#) ",
-        r"\r\nroot@[a-zA-Z0-9_-]*:",
+        r"(\r\n|^).+? ($|#) ",
+        r"(\r\n|^)bash-.+?($|#) ",
+        r"(\r\n|^)root@[a-zA-Z0-9_-]*:",
         _NSF_PROMPT,
     ]
     # TODO compile prompt regexp to increase performance
@@ -110,8 +149,9 @@ class Shell(Cli):
     def __init__(self, pexpect_handle, flush=True):
         super().__init__(pexpect_handle, flush=flush)
         # Firt check if we are on some sort of shell prompt
-        self._pe.sendline()
-        if not self.output(self._INITIAL_PROMPTS):
+        self.cmd()
+        if not self.sexpect(self._INITIAL_PROMPTS):
+            print(self.before)
             # TODO better exception
             raise Exception("Initial shell prompt not found")
         # Now sanitize prompt format
@@ -121,35 +161,40 @@ class Shell(Cli):
 
     def prompt(self, exit_code=0, **kwargs):
         return \
-            self.output(self._NSF_PROMPT, **kwargs) and \
-            int(self.match(1)) == exit_code
+            self.sexpect(self._NSF_PROMPT, **kwargs) and \
+            int(self.match(2)) == exit_code
+
+    @property
+    def output(self):
+        return self._pe.before.decode()
 
 
 class Uboot(Cli):
     """U-boot prompt support class.
     """
-    _PROMPT = "\r\n=> "
-    _EXIT_CODE_ECHO = "echo --$?--"
-    _EXIT_CODE = "--([0-9]+)--"
-    # TODO compile exit code regexp to increase performance
+    _PROMPT = "(\r\n|^)=> "
+    _EXIT_CODE_ECHO = "echo $?"
 
     def __init__(self, pexpect_handle, flush=True):
         super().__init__(pexpect_handle, flush=flush)
+        self._output = ""
         # Check if we are in U-boot prompt
         if not self.run("true"):
             # TODO better exception
             raise Exception("Unable to locate Uboot prompt")
 
     def prompt(self, exit_code=0, **kwargs):
-        if not self.output_exact(self._PROMPT, **kwargs):
+        if not self.sexpect(self._PROMPT, **kwargs):
             # TODO report error
             return False
+        self._output = self.before.decode()
+        # Check exit code
         self.cmd(self._EXIT_CODE_ECHO)
-        if not self.output(self._EXIT_CODE, **kwargs):
-            # TODO better error
-            raise Exception("Unable to parse our own exit code echo.")
-        result = int(self.match(1)) == exit_code
-        if not self.output_exact(self._PROMPT, **kwargs):
+        if not self.sexpect(self._PROMPT, **kwargs):
             # TODO report error
-            return False
-        return result
+            raise Exception("Unable to parse our own exit code echo.")
+        return int(self.before.decode()) == exit_code
+
+    @property
+    def output(self):
+        return self._output
