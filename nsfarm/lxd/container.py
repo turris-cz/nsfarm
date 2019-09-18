@@ -150,7 +150,7 @@ class Container():
                 container.stop(wait=True)
             # Create and configure image
             self._lxd_image = container.publish(wait=True)
-            self._lxd_image.add_alias(self._image_alias, "NSFarm: {}".format(self._image_alias))
+            self._lxd_image.add_alias(self._image_alias, "NSFarm image: {}".format(self._name))
         finally:
             container.delete()
 
