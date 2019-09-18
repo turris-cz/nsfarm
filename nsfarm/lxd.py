@@ -7,6 +7,7 @@ import hashlib
 import logging
 import pylxd
 import pexpect
+# TODO use LXD project for NSFarm?
 
 IMAGES_SOURCE = "https://images.linuxcontainers.org"
 IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
@@ -18,6 +19,10 @@ _images_lxd = None
 _lxd = None
 
 
+def _profile_device(profile, checkfunc):
+    return True not in {checkfunc(dev) for _, dev in profile.devices.items()}
+
+
 def _lxd_connect():
     global _images_lxd
     if _images_lxd is None:
@@ -25,6 +30,15 @@ def _lxd_connect():
     global _lxd
     if _lxd is None:
         _lxd = pylxd.Client()
+        # Verify profiles
+        root = _lxd.profiles.get("nsfarm-root")
+        internet = _lxd.profiles.get("nsfarm-internet")
+        if _profile_device(root, lambda dev: dev["type"] == "disk"):
+            # TODO better exception
+            raise Exception("nsfarm-root does not provide disk device")
+        if _profile_device(internet, lambda dev: dev["type"] == "nic" and dev["name"] == "internet"):
+            # TODO better exception
+            raise Exception("nsfarm-internet does not provide appropriate nic")
 
 
 class NetInterface():
@@ -81,6 +95,7 @@ class Container():
             md5sum.update(self.parent.hash.encode())
         else:
             md5sum.update(self.image_parent.fingerprint.encode())
+        # TODO we have to include files in dpath as well
         with open(self.fpath) as file:
             md5sum.update(file.read().encode())
         self.hash = md5sum.hexdigest()
@@ -134,6 +149,7 @@ class Container():
         try:
             container = _lxd.containers.create({
                 'name': container_name,
+                'profiles': ['nsfarm-root', 'nsfarm-internet'],
                 'source': image_source
             }, wait=True)
         except pylxd.exceptions.LXDAPIException as elxd:
@@ -175,11 +191,15 @@ class Container():
             return
         _lxd_connect()
         self.prepare_image()
+        profiles = ['nsfarm-root', ]
+        if 'internet' in self.opts:
+            profiles.append('nsfarm-internet')
         # TODO we could somehow just let it create it and return from this
         # method and wait later on when we realy need container.
         self.lxd_container = _lxd.containers.create({
             'name': self._container_name(),
             'ephemeral': True,
+            'profiles': profiles,
             'source': {
                 'type': 'image',
                 'alias': self.image_alias,
