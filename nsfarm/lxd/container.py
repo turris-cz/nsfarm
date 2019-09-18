@@ -1,52 +1,16 @@
-"""Containers management and network interface assigment.
+"""Containers and images management.
 """
 import os
 import time
 import itertools
 import hashlib
 import logging
-import pylxd
 import pexpect
-# TODO use LXD project for NSFarm?
+from . import _lxd
 
-IMAGES_SOURCE = "https://images.linuxcontainers.org"
 IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
 
-IMGS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "imgs")
-
-# Global LXD handles
-_images_lxd = None
-_lxd = None
-
-
-def _profile_device(profile, checkfunc):
-    return True not in {checkfunc(dev) for _, dev in profile.devices.items()}
-
-
-def _lxd_connect():
-    global _images_lxd
-    if _images_lxd is None:
-        _images_lxd = pylxd.Client(IMAGES_SOURCE)
-    global _lxd
-    if _lxd is None:
-        _lxd = pylxd.Client()
-        # Verify profiles
-        root = _lxd.profiles.get("nsfarm-root")
-        internet = _lxd.profiles.get("nsfarm-internet")
-        if _profile_device(root, lambda dev: dev["type"] == "disk"):
-            # TODO better exception
-            raise Exception("nsfarm-root does not provide disk device")
-        if _profile_device(internet, lambda dev: dev["type"] == "nic" and dev["name"] == "internet"):
-            # TODO better exception
-            raise Exception("nsfarm-internet does not provide appropriate nic")
-
-
-class NetInterface():
-    """Handler to manage single network interface.
-    """
-
-    def __init__(self, link_name):
-        self.link_name = link_name
+IMGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "imgs")
 
 
 class Container():
@@ -67,7 +31,7 @@ class Container():
         if not os.path.isdir(self._dpath):
             self._dpath = None
         # Make sure that we are connected to LXD
-        _lxd_connect()
+        _lxd.connect()
         # Get parent
         with open(self._fpath) as file:
             # This reads second line of file while initial hash removed
@@ -76,7 +40,7 @@ class Container():
         if parent.startswith("nsfarm:"):
             self._parent = Container(parent[7:])
         elif parent.startswith("images:"):
-            self._parent = _images_lxd.images.get_by_alias(parent[7:])
+            self._parent = _lxd.IMAGES.images.get_by_alias(parent[7:])
         else:
             raise Exception("The file has parent from unknown source: {}: {}".format(parent, self.fpath))
         # Calculate identity hash and generate image name
@@ -88,26 +52,30 @@ class Container():
 
     def __identity_hash(self):
         md5sum = hashlib.md5()
+        # Parent
         if isinstance(self._parent, Container):
             md5sum.update(self._parent.hash.encode())
         else:
             md5sum.update(self._parent.fingerprint.encode())
+        # File defining container
         with open(self._fpath, "rb") as file:
             md5sum.update(file.read())
+        # Additional nodes from directory
         if self._dpath:
-            nodes = [os.path.join(self._dpath, node) for node in os.listdir(self._dpath)]
+            nodes = os.listdir(self._dpath)
             while nodes:
                 node = nodes.pop()
+                path = os.path.join(self._dpath, node)
                 md5sum.update(node.encode())
-                if os.path.isdir(node):
-                    nodes += [os.path.join(node, nd) for nd in os.listdir(node)]
-                elif os.path.isfile(node):
+                if os.path.isdir(path):
+                    nodes += [os.path.join(node, nd) for nd in os.listdir(path)]
+                elif os.path.isfile(path):
                     # For plain file include content
-                    with open(node, "rb") as file:
+                    with open(path, "rb") as file:
                         md5sum.update(file.read())
-                elif os.path.islink(node):
+                elif os.path.islink(path):
                     # For link include its target as well
-                    md5sum.update(os.readlink(node).encode())
+                    md5sum.update(os.readlink(path).encode())
         return md5sum.hexdigest()
 
     def _container_name(self, prefix="nsfarm"):
@@ -115,9 +83,9 @@ class Container():
             prefix,
             self._name,
             os.getpid())
-        if _lxd.containers.exists(name):
+        if _lxd.LOCAL.containers.exists(name):
             i = 1
-            while _lxd.containers.exists("{}-{}".format(name, i)):
+            while _lxd.LOCAL.containers.exists("{}-{}".format(name, i)):
                 i += 1
             name = "{}-{}".format(name, i)
         return name
@@ -130,8 +98,8 @@ class Container():
         """
         if self._lxd_image:
             return
-        if _lxd.images.exists(self._image_alias, alias=True):
-            self._lxd_image = _lxd.images.get_by_alias(self._image_alias)
+        if _lxd.LOCAL.images.exists(self._image_alias, alias=True):
+            self._lxd_image = _lxd.LOCAL.images.get_by_alias(self._image_alias)
             return
         # We do not have appropriate image so prepare it
         logging.info("Bootstrapping image: %s", self._image_alias)
@@ -145,11 +113,11 @@ class Container():
         else:
             # We have to pull it from images
             image_source["mode"] = "pull"
-            image_source["server"] = IMAGES_SOURCE
+            image_source["server"] = _lxd.IMAGES_SOURCE
             image_source["alias"] = self._parent.fingerprint
         container_name = "nsfarm-bootstrap-{}-{}".format(self._name, self._hash)
         try:
-            container = _lxd.containers.create({
+            container = _lxd.LOCAL.containers.create({
                 'name': container_name,
                 'profiles': ['nsfarm-root', 'nsfarm-internet'],
                 'source': image_source
@@ -160,7 +128,7 @@ class Container():
                 raise
             logging.warning("Other instance is already bootsrapping image probably. "
                             "Waiting for following container to go away: %s", container_name)
-            while _lxd.containers.exists(container_name):
+            while _lxd.LOCAL.containers.exists(container_name):
                 time.sleep(1)
             self.prepare_image()  # possibly get created image or try again
             return
@@ -169,7 +137,6 @@ class Container():
             with open(self._fpath) as file:
                 container.files.put(IMAGE_INIT_PATH, file.read(), mode=700)
             if self._dpath:
-                print(self._dpath)
                 container.files.recursive_put(self._dpath, "/")
             # Run script to bootstrap image
             container.start(wait=True)
@@ -198,7 +165,7 @@ class Container():
             profiles.append('nsfarm-internet')
         # TODO we could somehow just let it create it and return from this
         # method and wait later on when we realy need container.
-        self._lxd_container = _lxd.containers.create({
+        self._lxd_container = _lxd.LOCAL.containers.create({
             'name': self._container_name(),
             'ephemeral': True,
             'profiles': profiles,
