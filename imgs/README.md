@@ -15,7 +15,7 @@ name of base image to be used. It is suggested to continue with comment block wi
 description of container use. This is an example of such header:
 ```sh
 #!/bin/bash
-#images:alpine/3.9
+#images:alpine/3.10/amd64
 ##################################################################################
 # This is example image definition. Please describe here what this container does.
 ##################################################################################
