@@ -125,9 +125,8 @@ class Container():
     def prepare_image(self):
         """Prepare image for this container if not already prepared.
 
-        You can call this explicitly if you want to prepapre image but this
-        method is automatically called when you atempt to prepare container so
-        you don't have to do it.
+        You can call this explicitly if you want to prepapre image but this method is automatically called when you
+        atempt to prepare container so you don't have to do it.
         """
         if self._lxd_image:
             return
@@ -213,8 +212,7 @@ class Container():
     def cleanup(self):
         """Remove container if it exists.
 
-        This is intended to be called as a cleanup handler. Please call it when
-        you are removing this container.
+        This is intended to be called as a cleanup handler. Please call it when you are removing this container.
         """
         if self._lxd_container is None:
             return  # No cleanup is required
@@ -257,8 +255,7 @@ class Container():
     def hash(self):
         """Identifying Hash of container.
 
-        This is unique identifier generated from container sources and used to
-        check if image can be reused or not.
+        This is unique identifier generated from container sources and used to check if image can be reused or not.
         """
         return self._hash
 
@@ -269,8 +266,7 @@ class Container():
 
 
 class BootContainer(Container):
-    """Extension for Container handling specific tasks for container used to
-    boot medkit on board.
+    """Extension for Container handling specific tasks for container used to boot medkit on board.
     """
 
     # TODO branch or build to pull?

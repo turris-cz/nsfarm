@@ -1,8 +1,7 @@
 """CLI comunication helper classes based on pexpect.
 
-This ensures systematic logging and access to terminals. We implement two
-special terminal types at the moment. We have support for shell and u-boot.
-They differ in a way how they handle prompt and methods they provide to user.
+This ensures systematic logging and access to terminals. We implement two special terminal types at the moment. We have
+support for shell and u-boot.  They differ in a way how they handle prompt and methods they provide to user.
 """
 import pexpect
 
@@ -23,11 +22,10 @@ class Console:
     def sexpect(self, pattern, **kwargs):
         """Safe variant of pexpect expect method.
 
-        pattern can be single string or list of patterns to match. Note that
-        this is extension to pexpect expect.
+        pattern can be single string or list of patterns to match. Note that this is extension to pexpect expect.
 
-        It returns matched pattern index + 1. When timeout or end of input was
-        reach then it returns 0. This allows it to be directly used in assert.
+        It returns matched pattern index + 1. When timeout or end of input was reach then it returns 0. This allows it
+        to be directly used in assert.
         """
         patterns = [pexpect.TIMEOUT, ]
         if isinstance(pattern, str):
@@ -42,11 +40,11 @@ class Console:
     def sexpect_exact(self, string, **kwargs):
         """Safe variant of pexpect expect_exact method.
 
-        string can be one string or list of string to match. Note that this is
-        extension compared to pexpect implementation.
+        string can be one string or list of string to match. Note that this is extension compared to pexpect
+        implementation.
 
-        It returns matched string index + 1. When timeout or end of input was
-        reach then it returns 0. This allows it to be directly used in assert.
+        It returns matched string index + 1. When timeout or end of input was reach then it returns 0. This allows it to
+        be directly used in assert.
         """
         strings = [pexpect.TIMEOUT, ]
         if isinstance(string, str):
@@ -66,8 +64,8 @@ class Console:
     def cmd(self, cmd=""):
         """Calls pexpect sendline and expect cmd.
 
-        This is handy when you are comunicating with console that echoes input
-        back. This effectively removes sent command from output.
+        This is handy when you are comunicating with console that echoes input back. This effectively removes sent
+        command from output.
         """
         self.sendline(cmd)
         if not self.sexpect_exact(cmd + '\r\n'):
@@ -77,9 +75,8 @@ class Console:
     def flush(self):
         """Flush all input.
 
-        This is handy if you don't know the state of console and you don't want
-        to read any old input. This is automatically called in init unless you
-        specify otherwise.
+        This is handy if you don't know the state of console and you don't want to read any old input. This is
+        automatically called in init unless you specify otherwise.
         """
         bufflen = 2048
         while len(self.read_nonblocking(bufflen)) == bufflen:
@@ -87,8 +84,7 @@ class Console:
 
 
 class Cli(Console):
-    """This is generic abstraction on top of pexpect for command line
-    interface.
+    """This is generic abstraction on top of pexpect for command line interface.
     """
 
     def __init__(self, pexpect_handle, flush=True):
@@ -97,8 +93,7 @@ class Cli(Console):
             self.flush()
 
     def prompt(self, exit_code=0, **kwargs):
-        """Follow output until prompt is reached and parse it.
-        Exit code is verified against provided one.
+        """Follow output until prompt is reached and parse it.  Exit code is verified against provided one.
         """
         raise NotImplementedError
 
@@ -106,24 +101,21 @@ class Cli(Console):
     def output(self):
         """All output before latest prompt.
 
-        This is everything not matched till prompt is located.
-        Note that this is for some implementations same as pexpect before but
-        in others it can differ so you should always use this property instead
-        of before.
+        This is everything not matched till prompt is located.  Note that this is for some implementations same as
+        pexpect before but in others it can differ so you should always use this property instead of before.
         """
         raise NotImplementedError
 
     def run(self, cmd="", exit_code=0, **kwargs):
-        """Run given command and follow output untill prompt is reached.
-        This is same as if you would call cmd() and prompt().
+        """Run given command and follow output untill prompt is reached.  This is same as if you would call cmd() and
+        prompt().
         """
         self.cmd(cmd)
         return self.prompt(exit_code, **kwargs)
 
     def batch(self, batch, **kwargs):
-        """Run multiple commands one after each other.
-        Every command has to end with prompt and have to exit with exit code 0.
-        This is same as running run() for every command in batch.
+        """Run multiple commands one after each other.  Every command has to end with prompt and have to exit with exit
+        code 0.  This is same as running run() for every command in batch.
         """
         for cmd in batch:
             if not self.run(cmd, **kwargs):

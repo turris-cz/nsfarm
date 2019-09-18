@@ -37,8 +37,7 @@ class Board():
         self.serial.rts = state
 
     def uboot(self):
-        """Ensures that board is booted to u-boot and ready to accept u-boot
-        commands.
+        """Ensures that board is booted to u-boot and ready to accept u-boot commands.
 
         Returns instance of cli.Uboot
         """
@@ -52,8 +51,7 @@ class Board():
         return cli.Uboot(self.pexpect)
 
     def bootup(self):
-        """Boot board using TFTP boot. This ensures that board is booted up and
-        ready to accept commands.
+        """Boot board using TFTP boot. This ensures that board is booted up and ready to accept commands.
 
         Returns instance of cli.Shell
         """
@@ -120,8 +118,7 @@ class Turris1x(Board):
 
 
 def get_board(config):
-    """Function which instantiates correct board class depending on
-    target_config.
+    """Function which instantiates correct board class depending on target_config.
     """
     boards = {
         "mox": Mox,
