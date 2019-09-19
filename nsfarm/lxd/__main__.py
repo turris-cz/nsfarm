@@ -1,7 +1,9 @@
 import sys
 import argparse
+import subprocess
 import dateutil.relativedelta
 from . import utils
+from . import Container
 
 
 def parser(parser):
@@ -37,10 +39,21 @@ def parser(parser):
         help='Bootstrap all images present instead of only listed ones.'
     )
 
+    inspect = subparsers.add_parser(
+        'inspect',
+        help="Create new container from given image and access shell. You can use this to inspect image's content.")
+    inspect.set_defaults(lxd_op='inspect')
+    inspect.add_argument(
+        'IMAGE',
+        help="""
+        """
+    )
+
     return {
         None: parser,
         'clean': clean,
         'bootstrap': bootstrap,
+        'inspect': inspect,
     }
 
 
@@ -86,10 +99,19 @@ def op_bootstrap(args, parser):
     sys.exit(0 if success else 1)
 
 
+def op_inspect(args, _):
+    """Handler for command line operation inspect
+    """
+    with Container(args.IMAGE) as cont:
+        sys.exit(subprocess.call(['lxc', 'exec', cont.name, '/bin/sh']))
+
+
+
 def handle_args(args, parser_ret):
     handles = {
         'clean': op_clean,
         'bootstrap': op_bootstrap,
+        'inspect': op_inspect,
     }
     if hasattr(args, 'lxd_op'):
         handles[args.lxd_op](args, parser_ret[args.lxd_op])

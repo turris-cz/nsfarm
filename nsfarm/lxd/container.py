@@ -17,11 +17,11 @@ class Container():
     """Generic container handle.
     """
 
-    def __init__(self, name, devices=[], internet=True):
-        self._name = name
+    def __init__(self, img_name, devices=[], internet=True):
+        self._name = img_name
         self._internet = internet
         self._devices = tuple(devices)
-        self._dpath = os.path.join(IMGS_DIR, name)
+        self._dpath = os.path.join(IMGS_DIR, img_name)
         self._fpath = self._dpath + ".sh"
         # Verify existence of image definition
         if not os.path.isfile(self._fpath):
@@ -212,12 +212,20 @@ class Container():
 
     def __exit__(self, etype, value, traceback):
         self.cleanup()
+    
+    @property
+    def image_name(self):
+        """Name of NSFarm image this container is initialized for.
+        """
+        return self._name
 
     @property
     def name(self):
-        """Name of container
+        """Name of container if prepared, otherwise None.
         """
-        return self._name
+        if self._lxd_container is None:
+            return None
+        return self._lxd_container.name
 
     @property
     def internet(self):
