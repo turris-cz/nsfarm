@@ -160,21 +160,28 @@ class Container():
         if self._lxd_container is not None:
             return
         self.prepare_image()
+        # Collect profiles to be assigned to container
         profiles = ['nsfarm-root', ]
         if self._internet:
             profiles.append('nsfarm-internet')
-        # TODO we could somehow just let it create it and return from this
-        # method and wait later on when we realy need container.
+        # Collect devices to attach
+        devices = dict()
+        for device in self._devices:
+            devices.update(device.acquire(self))
+        # Create and start container
         self._lxd_container = _lxd.LOCAL.containers.create({
             'name': self._container_name(),
             'ephemeral': True,
             'profiles': profiles,
+            'devices': devices,
             'source': {
                 'type': 'image',
                 'alias': self._image_alias,
             },
         }, wait=True)
         self._lxd_container.start(wait=True)
+        # TODO we could somehow just let it create it and return from this method and wait later on when we realy need
+        # container.
 
     def cleanup(self):
         """Remove container if it exists.
@@ -183,9 +190,15 @@ class Container():
         """
         if self._lxd_container is None:
             return  # No cleanup is required
+        # First freeze and remove devices
+        self._lxd_container.freeze(wait=True)
+        self._lxd_container.devices = dict()
+        self._lxd_container.save()
+        for device in self._devices:
+            device.release(self)
+        # Now stop container (Note: container is ephemeral so it is removed automatically after stop)
         self._lxd_container.stop()
         self._lxd_container = None
-        # Note: container is ephemeral so it is removed automatically after stop
 
     def pexpect(self, shell="/bin/sh"):
         """Returns pexpect handle for shell in container.
