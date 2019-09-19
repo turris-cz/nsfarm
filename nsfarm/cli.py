@@ -68,7 +68,7 @@ class Console:
         command from output.
         """
         self.sendline(cmd)
-        if not self.sexpect_exact(cmd + '\r\n'):
+        if not self.sexpect_exact(cmd) or not self.sexpect("(\r\n|\n\r)"):
             # TODO better exception
             raise Exception("cmd used but terminal probably does not echoes.")
 
@@ -129,11 +129,11 @@ class Shell(Cli):
     This is tested to handle busybox and bash.
     """
     _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?)\$ '"
-    _NSF_PROMPT = r"(\r\n|^)nsfprompt:([0-9]+)($|#) "
+    _NSF_PROMPT = r"(\r\n|\n\r|^)nsfprompt:([0-9]+)($|#) "
     _INITIAL_PROMPTS = [
-        r"(\r\n|^).+? ($|#) ",
-        r"(\r\n|^)bash-.+?($|#) ",
-        r"(\r\n|^)root@[a-zA-Z0-9_-]*:",
+        r"(\r\n|\n\r|^).+? ($|#) ",
+        r"(\r\n|\n\r|^)bash-.+?($|#) ",
+        r"(\r\n|\n\r|^)root@[a-zA-Z0-9_-]*:",
         _NSF_PROMPT,
     ]
     # TODO compile prompt regexp to increase performance
@@ -143,7 +143,6 @@ class Shell(Cli):
         # Firt check if we are on some sort of shell prompt
         self.cmd()
         if not self.sexpect(self._INITIAL_PROMPTS):
-            print(self.before)
             # TODO better exception
             raise Exception("Initial shell prompt not found")
         # Now sanitize prompt format
@@ -164,7 +163,7 @@ class Shell(Cli):
 class Uboot(Cli):
     """U-boot prompt support class.
     """
-    _PROMPT = "(\r\n|^)=> "
+    _PROMPT = "(\r\n|\n\r|^)=> "
     _EXIT_CODE_ECHO = "echo $?"
 
     def __init__(self, pexpect_handle, flush=True):
@@ -190,3 +189,9 @@ class Uboot(Cli):
     @property
     def output(self):
         return self._output
+
+
+# Notest on some of the hacks in this file
+#
+# There are new line character matches in regular expressions. Correct one is \r\n but some serial controlles for some
+# reason also use \n\r so we match both alternatives.

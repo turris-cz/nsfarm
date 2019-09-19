@@ -203,6 +203,7 @@ class Container():
     def pexpect(self, shell="/bin/sh"):
         """Returns pexpect handle for shell in container.
         """
+        # TODO some logging of this session
         assert self._lxd_container is not None
         return pexpect.spawn('lxc', ["exec", self._lxd_container.name, shell])
 
@@ -247,16 +248,8 @@ class Container():
         """
         return self._hash
 
+    @property
     def image_alias(self):
         """Alias of image for this container.
         """
         return self._image_alias
-
-
-class BootContainer(Container):
-    """Extension for Container handling specific tasks for container used to boot medkit on board.
-    """
-
-    # TODO branch or build to pull?
-    def __init__(self, *args, **kwargs):
-        super().__init__("boot", *args, **kwargs)

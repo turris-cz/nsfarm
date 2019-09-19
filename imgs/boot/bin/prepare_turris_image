@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+TFTP_ROOT="/var/tftpboot"
+
+# TODO use this
+BOARD="$1"
+MODE="$2"
+TARGET="$3"
+# TODO
+
+# Get appropriate medkit
+wait4network
+wget "https://repo.turris.cz/hbk/medkit/omnia-medkit-latest.tar.gz" -O medkit.tar.gz
+
+# Repack as CPIO
+mkdir root
+tar -xzf medkit.tar.gz -C root
+( cd root && find . | cpio -H newc -o > ../root.cpio )
+mkimage -A arm -O linux -T ramdisk -C none -d root.cpio root.uimage
+
+# Prepare to TFTP
+cp root/boot/zImage "$TFTP_ROOT/zImage"
+cp -L root/boot/dtb "$TFTP_ROOT/dtb"
+mv root.uimage "$TFTP_ROOT/root.uimage"
+
+# Clean after ourself
+rm -rf root root.cpio medkit.tar.gz

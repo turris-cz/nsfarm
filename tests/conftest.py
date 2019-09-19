@@ -1,6 +1,7 @@
 import pytest
 import nsfarm.board
 import nsfarm.cli
+import nsfarm.lxd
 
 
 @pytest.fixture(scope="session", name="board", params=[pytest.param(None, marks=pytest.mark.serial)])
@@ -23,11 +24,17 @@ def board_uboot(request, board):
     return board.uboot()
 
 
+@pytest.fixture(scope="session", name="wan", params=[pytest.param(None, marks=pytest.mark.wan)])
+def fixture_wan(request):
+    """Top level fixture used to share WAN interface handler.
+    """
+    return nsfarm.lxd.NetInterface("wan", request.config.target_config['wan'])
+
+
 @pytest.fixture(scope="session")
-def board_shell(request, board):
+def board_shell(request, board, wan):
     """Boot board to Shell.
     Provides instance of nsfarm.cli.Shell()
     """
     request.addfinalizer(lambda: board.reset(True))
-    # TODO prepare wan container with appropriate medkit
-    return board.bootup()
+    return board.bootup(wan)

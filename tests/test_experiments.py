@@ -1,11 +1,11 @@
 import pytest
 
 
-def no_test_help(board, board_uboot):
+def test_terminal(board, board_shell):
     board.serial_miniterm()
 
 
-def test_cpu_env(board, board_uboot):
+def no_test_cpu_env(board, board_uboot):
     assert board_uboot.run("printenv cpu")
     assert board_uboot.output == "cpu=armv7"
 

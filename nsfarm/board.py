@@ -7,6 +7,7 @@ import serial
 import serial.tools.miniterm
 from pexpect import fdpexpect
 from . import cli
+from .lxd import Container
 
 MINITERM_DEFAULT_EXIT = '\x1d'  # Ctrl+]
 MINITERM_DEFAULT_MENU = '\x14'  # Ctrl+T
@@ -50,15 +51,28 @@ class Board():
         self.pexpect.sendline("")
         return cli.Uboot(self.pexpect)
 
-    def bootup(self):
+    def bootup(self, device_wan):
         """Boot board using TFTP boot. This ensures that board is booted up and ready to accept commands.
+
+        device_wan: Wan device to board. This is instance of nsfarm.lxd.NetInterface.
 
         Returns instance of cli.Shell
         """
         # First get U-Boot prompt
         uboot = self.uboot()
-        # Now load FIT image from TFTP
-        # TODO
+        # Now load image from TFTP
+        with Container("boot", devices=[device_wan, ]) as cont:
+            ccli = cli.Shell(cont.pexpect())
+            ccli.run("prepare_turris_image")
+            assert uboot.batch([
+                'setenv ipaddr 192.168.1.142',
+                'setenv serverip 192.168.1.1',
+                'tftpboot 0x01000000 192.168.1.1:zImage',
+                'tftpboot 0x02000000 192.168.1.1:dtb',
+                'tftpboot 0x03000000 192.168.1.1:root.uimage',
+                'setenv bootargs "earlyprintk console=ttyS0,115200 rootfstype=ramfs initrd=0x03000000"',
+            ], timeout=120)
+        self.pexpect.sendline('bootz 0x01000000 0x03000000 0x02000000')
         # Wait for bootup
         self.pexpect.expect_exact(["Router Turris successfully started.", ])
         # Note Shell sends new line which opens terminal for it
