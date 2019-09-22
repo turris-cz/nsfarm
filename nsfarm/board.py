@@ -1,6 +1,5 @@
 """This defines generic board and its helpers.
 """
-import os
 import sys
 import time
 import serial
@@ -14,7 +13,10 @@ MINITERM_DEFAULT_MENU = '\x14'  # Ctrl+T
 MINITERM_ENCODING = sys.getdefaultencoding()
 
 
-class Board():
+class Board:
+    """General abstract class defining handle for board.
+    """
+
     def __init__(self, target, target_config):
         """Initialize board handler.
         serial: path to serial tty
@@ -25,7 +27,7 @@ class Board():
         self.reset(True)  # Hold in reset state
 
         self.logfile = open("./{}.log".format(target), "wb")
-        self.pexpect = fdpexpect.fdspawn(self.serial, logfile=self.logfile)
+        self._pexpect = fdpexpect.fdspawn(self.serial, logfile=self.logfile)
 
     def power(self, state):
         """Set power state.
@@ -47,9 +49,9 @@ class Board():
         time.sleep(0.001)
         self.reset(False)
         # Now wait for U-Boot hint to get CLI
-        self.pexpect.expect_exact(["Hit any key to stop autoboot: ", ])
-        self.pexpect.sendline("")
-        return cli.Uboot(self.pexpect)
+        self._pexpect.expect_exact(["Hit any key to stop autoboot: ", ])
+        self._pexpect.sendline("")
+        return cli.Uboot(self._pexpect)
 
     def bootup(self, device_wan):
         """Boot board using TFTP boot. This ensures that board is booted up and ready to accept commands.
@@ -64,25 +66,24 @@ class Board():
         with Container("boot", devices=[device_wan, ]) as cont:
             ccli = cli.Shell(cont.pexpect())
             ccli.run("prepare_turris_image")
-            assert uboot.batch([
-                'setenv ipaddr 192.168.1.142',
-                'setenv serverip 192.168.1.1',
-                'tftpboot 0x01000000 192.168.1.1:zImage',
-                'tftpboot 0x02000000 192.168.1.1:dtb',
-                'tftpboot 0x03000000 192.168.1.1:root.uimage',
-                'setenv bootargs "earlyprintk console=ttyS0,115200 rootfstype=ramfs initrd=0x03000000"',
-            ], timeout=120)
-        self.pexpect.sendline('bootz 0x01000000 0x03000000 0x02000000')
+            uboot.run('setenv bootargs "earlyprintk console=ttyS0,115200 rootfstype=ramfs initrd=0x03000000"')
+            uboot.run('setenv ipaddr 192.168.1.142')
+            uboot.run('setenv serverip 192.168.1.1')
+            uboot.run('tftpboot 0x01000000 192.168.1.1:zImage')
+            uboot.run('tftpboot 0x02000000 192.168.1.1:dtb')
+            uboot.run('tftpboot 0x03000000 192.168.1.1:root.uimage', timeout=120)
+        self._pexpect.sendline('bootz 0x01000000 0x03000000 0x02000000')
         # Wait for bootup
-        self.pexpect.expect_exact(["Router Turris successfully started.", ])
+        self._pexpect.expect_exact(["Router Turris successfully started.", ], timeout=120)
         # Note Shell sends new line which opens terminal for it
         # TODO why this flush timeouts?
         return cli.Shell(self._pexpect, flush=False)
 
-    def serial_pexpect(self):
-        """Returns pexpect handle to serial TTY interface.
+    @property
+    def pexpect(self):
+        """pexpect handle to serial TTY interface.
         """
-        return self.pexpect
+        return self._pexpect
 
     def serial_miniterm(self):
         """Runs interactive miniterm on serial TTY interface.
@@ -112,24 +113,15 @@ class Mox(Board):
     """Turris Mox boards.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 
 class Omnia(Board):
     """Turris Omnia board.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 
 class Turris1x(Board):
     """Turris 1.0 and 1.1 boards.
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 
 def get_board(config):

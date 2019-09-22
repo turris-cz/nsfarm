@@ -15,20 +15,18 @@ def fixture_board(request):
     return brd
 
 
-@pytest.fixture(scope="session")
-def board_uboot(request, board):
-    """Boot board to u-boot prompt.
-    Provides instance of nsfarm.cli.Uboot()
-    """
-    request.addfinalizer(lambda: board.reset(True))
-    return board.uboot()
-
-
 @pytest.fixture(scope="session", name="wan", params=[pytest.param(None, marks=pytest.mark.wan)])
 def fixture_wan(request):
     """Top level fixture used to share WAN interface handler.
     """
     return nsfarm.lxd.NetInterface("wan", request.config.target_config['wan'])
+
+
+@pytest.fixture(scope="session", name="lan1", params=[pytest.param(None, marks=pytest.mark.lan1)])
+def fixture_lan1(request):
+    """Top level fixture used to share LAN1 interface handler.
+    """
+    return nsfarm.lxd.NetInterface("lan", request.config.target_config['lan1'])
 
 
 @pytest.fixture(scope="session")
