@@ -76,7 +76,8 @@ class Board():
         # Wait for bootup
         self.pexpect.expect_exact(["Router Turris successfully started.", ])
         # Note Shell sends new line which opens terminal for it
-        return cli.Shell(self.pexpect)
+        # TODO why this flush timeouts?
+        return cli.Shell(self._pexpect, flush=False)
 
     def serial_pexpect(self):
         """Returns pexpect handle to serial TTY interface.

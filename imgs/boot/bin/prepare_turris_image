@@ -15,6 +15,7 @@ wget "https://repo.turris.cz/hbk/medkit/omnia-medkit-latest.tar.gz" -O medkit.ta
 # Repack as CPIO
 mkdir root
 tar -xzf medkit.tar.gz -C root
+ln -sf /sbin/init root/init
 ( cd root && find . | cpio -H newc -o > ../root.cpio )
 mkimage -A arm -O linux -T ramdisk -C none -d root.cpio root.uimage
 
