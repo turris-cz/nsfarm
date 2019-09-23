@@ -5,8 +5,8 @@ import time
 import serial
 import serial.tools.miniterm
 from pexpect import fdpexpect
-from . import cli
-from .lxd import Container
+from .. import cli
+from ..lxd import Container
 
 MINITERM_DEFAULT_EXIT = '\x1d'  # Ctrl+]
 MINITERM_DEFAULT_MENU = '\x14'  # Ctrl+T
@@ -28,6 +28,12 @@ class Board:
 
         self.logfile = open("./{}.log".format(target), "wb")
         self._pexpect = fdpexpect.fdspawn(self.serial, logfile=self.logfile)
+
+    @property
+    def pexpect(self):
+        """pexpect handle to serial TTY interface.
+        """
+        return self._pexpect
 
     def power(self, state):
         """Set power state.
@@ -66,24 +72,21 @@ class Board:
         with Container("boot", devices=[device_wan, ]) as cont:
             ccli = cli.Shell(cont.pexpect())
             ccli.run("prepare_turris_image")
-            uboot.run('setenv bootargs "earlyprintk console=ttyS0,115200 rootfstype=ramfs initrd=0x03000000"')
             uboot.run('setenv ipaddr 192.168.1.142')
             uboot.run('setenv serverip 192.168.1.1')
-            uboot.run('tftpboot 0x01000000 192.168.1.1:zImage')
-            uboot.run('tftpboot 0x02000000 192.168.1.1:dtb')
-            uboot.run('tftpboot 0x03000000 192.168.1.1:root.uimage', timeout=120)
-        self._pexpect.sendline('bootz 0x01000000 0x03000000 0x02000000')
+            self._board_bootup(uboot)
         # Wait for bootup
         self._pexpect.expect_exact(["Router Turris successfully started.", ], timeout=120)
         # Note Shell sends new line which opens terminal for it
         # TODO why this flush timeouts?
         return cli.Shell(self._pexpect, flush=False)
 
-    @property
-    def pexpect(self):
-        """pexpect handle to serial TTY interface.
+    def _board_bootup(self, uboot):
+        """Board specific bootup routine.
+
+        It has to implement TFTP uboot routines.
         """
-        return self._pexpect
+        raise NotImplementedError
 
     def serial_miniterm(self):
         """Runs interactive miniterm on serial TTY interface.
@@ -107,32 +110,3 @@ class Board:
         miniterm.join()
 
         sys.stderr.write("\n--- Miniterm exit ---\n")
-
-
-class Mox(Board):
-    """Turris Mox boards.
-    """
-
-
-class Omnia(Board):
-    """Turris Omnia board.
-    """
-
-
-class Turris1x(Board):
-    """Turris 1.0 and 1.1 boards.
-    """
-
-
-def get_board(config):
-    """Function which instantiates correct board class depending on target_config.
-    """
-    boards = {
-        "mox": Mox,
-        "omnia": Omnia,
-        "turris1x": Turris1x,
-    }
-    board = config.target_config["board"]
-    if board not in boards:
-        raise Exception("Unknown or unsupported board: {}".format(board))
-    return boards[board](config.getoption("-T"), config.target_config)
