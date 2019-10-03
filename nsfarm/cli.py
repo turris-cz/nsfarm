@@ -51,12 +51,21 @@ class Cli:
         self.expect_exact(cmd)
         self.expect_exact(["\r\n", "\n\r"])
 
-    def run(self, cmd="", exit_code=0, **kwargs):
-        """Run given command and follow output untill prompt is reached and check exit code.  This is same as if you
-        would call cmd() and prompt() witch asserting exit_code.
+    def run(self, cmd="", exit_code=lambda ec: ec == 0, **kwargs):
+        """Run given command and follow output until prompt is reached and return exit code with optional automatic
+        check. This is same as if you would call cmd() and prompt() witch asserting exit_code.
+
+        cmd: command to be executed
+        exit_code: lambda function verifying exit code or None to skip assert
+        All other key-word arguments are passed to prompt call.
+
+        Returns exit code of command.
         """
         self.command(cmd)
-        assert self.prompt(**kwargs) == exit_code
+        ec = self.prompt(**kwargs)
+        if exit_code is not None:
+            assert exit_code(ec)
+        return exit_code
 
     def match(self, index):
         """Returns located match in previously matched output.
