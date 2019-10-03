@@ -110,3 +110,27 @@ class Board:
         miniterm.join()
 
         sys.stderr.write("\n--- Miniterm exit ---\n")
+
+    @property
+    def wan(self):
+        """Network interface name for WAN interface in router
+        """
+        raise NotImplementedError
+
+    @property
+    def lan1(self):
+        """Network interface name for LAN1 interface in router
+        """
+        raise NotImplementedError
+
+    @property
+    def lan2(self):
+        """Network interface name for LAN2 interface in router
+        """
+        raise NotImplementedError
+
+    @property
+    def lan3(self):
+        """Network interface name for LAN3 interface in router
+        """
+        raise NotImplementedError

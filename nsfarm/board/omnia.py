@@ -13,3 +13,15 @@ class Omnia(Board):
         uboot.run('tftpboot 0x02000000 192.168.1.1:dtb')
         uboot.run('tftpboot 0x03000000 192.168.1.1:root.uimage', timeout=120)
         uboot.sendline('bootz 0x01000000 0x03000000 0x02000000')
+
+    @property
+    def wan(self):
+        return "eth0"
+
+    @property
+    def lan1(self):
+        return "lan0"
+
+    @property
+    def lan2(self):
+        return "lan3"
