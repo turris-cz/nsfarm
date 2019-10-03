@@ -22,12 +22,13 @@ class Board:
         serial: path to serial tty
         """
         self.config = target_config
-
-        self.serial = serial.Serial(self.config['serial'], 115200)
-        self.reset(True)  # Hold in reset state
-
+        # Open serial console to board
+        self._serial = serial.Serial(self.config['serial'], 115200)
+        # TODO better and configurable logging
         self.logfile = open("./{}.log".format(target), "wb")
-        self._pexpect = fdpexpect.fdspawn(self.serial, logfile=self.logfile)
+        self._pexpect = fdpexpect.fdspawn(self._serial, logfile=self.logfile)
+        # Set board to some known state
+        self.reset(True)  # Hold in reset state
 
     @property
     def pexpect(self):
@@ -38,12 +39,12 @@ class Board:
     def power(self, state):
         """Set power state.
         """
-        self.serial.cst = state
+        self._serial.cst = state
 
     def reset(self, state):
         """Set reset pin state.
         """
-        self.serial.rts = state
+        self._serial.rts = state
 
     def uboot(self):
         """Ensures that board is booted to u-boot and ready to accept u-boot commands.
@@ -93,7 +94,7 @@ class Board:
 
         This can be used only if you disable capture in pytest (--capture=no).
         """
-        miniterm = serial.tools.miniterm.Miniterm(self.serial)
+        miniterm = serial.tools.miniterm.Miniterm(self._serial, echo=False)
         miniterm.exit_character = MINITERM_DEFAULT_EXIT
         miniterm.menu_character = MINITERM_DEFAULT_MENU
         miniterm.set_rx_encoding(MINITERM_ENCODING)
