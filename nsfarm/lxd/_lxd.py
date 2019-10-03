@@ -23,6 +23,10 @@ def connect():
     if LOCAL is None:
         LOCAL = pylxd.Client()
         # Verify profiles
+        for name in ("nsfarm-root", "nsfarm-internet"):
+            if not LOCAL.profiles.exists(name):
+                # TODO better exception
+                raise Exception("Missing required LXD profile: {}".format(name))
         root = LOCAL.profiles.get("nsfarm-root")
         internet = LOCAL.profiles.get("nsfarm-internet")
         if _profile_device(root, lambda dev: dev["type"] == "disk"):

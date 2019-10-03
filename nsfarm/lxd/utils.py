@@ -54,5 +54,5 @@ def bootstrap(imgs=None):
             container.Container(img).prepare_image()
         except Exception as exc:
             success = False
-            logging.error("Bootstrap failed for '%s': %s", img, exc)
+            logging.exception("Bootstrap failed for: %s", img)
     return success
