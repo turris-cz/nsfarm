@@ -4,6 +4,7 @@ This ensures systematic logging and access to terminals. We implement two specia
 support for shell and u-boot.  They differ in a way how they handle prompt and methods they provide to user.
 """
 import pexpect
+import base64
 
 
 def pexpect_flush(pexpect_handle):
@@ -110,6 +111,27 @@ class Shell(Cli):
     def prompt(self, **kwargs):
         self.expect(self._NSF_PROMPT, **kwargs)
         return int(self.match(2))
+
+    def file_read(self, path):
+        """Read file trough shell.
+
+        path: path to file to read
+
+        This returns bytes with content of file from path.
+        """
+        self_sh.run("base64 '{}'".format(path))
+        return base64.b64decode(self._sh.output())
+
+    def file_write(self, path, content):
+        """Write given content to file on path. Note that parent directory has to exists.
+
+        path: path to file to be written
+        content: bytes to be written to it
+        """
+        self._sh.sendline("base64 --decode > '{}'".format(path))
+        self._sh.sendline(base64.b64encode(content))
+        self._sh.sendeof()
+        assert self._sh.prompt() == 0
 
     @property
     def output(self):
