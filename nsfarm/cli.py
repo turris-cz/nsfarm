@@ -48,6 +48,8 @@ class Cli:
         command from output.
         """
         self.sendline(cmd)
+        # WARNING: this has known problem with serial console. Shells on serial console breaks line at 80 characters and
+        # that means that this expect won't match.
         self.expect_exact(cmd)
         self.expect_exact(["\r\n", "\n\r"])
 
@@ -95,6 +97,7 @@ class Shell(Cli):
         _NSF_PROMPT,
     ]
     # TODO compile prompt regexp to increase performance
+    # TODO the width of terminal is limited and command function fails with long commands
 
     def __init__(self, pexpect_handle, flush=True):
         super().__init__(pexpect_handle, flush=flush)
