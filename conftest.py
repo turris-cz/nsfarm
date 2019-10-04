@@ -9,6 +9,8 @@ import os
 import argparse
 import configparser
 
+pytest_plugins = ("pytest_html", )
+
 
 def pytest_addoption(parser):
     parser.addoption(

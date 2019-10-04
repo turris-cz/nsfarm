@@ -1,3 +1,6 @@
+pytest>=5.0
+pytest-lazy-fixture>=0.5
+pytest-html>=2.0
 pexpect
 pyserial
 pylxd
