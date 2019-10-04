@@ -1,0 +1,7 @@
+---
+description: ISP DHCP service
+
+import: isp
+
+filter:
+    - { in: local, out: _fw, service: dhcp, action: accept }

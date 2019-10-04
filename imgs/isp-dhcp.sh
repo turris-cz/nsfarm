@@ -3,9 +3,13 @@
 ##################################################################################
 # This is simulating ISP with simple DHCP setup.
 ##################################################################################
-# 2
 set -e
 
-wait4boot
+wait4network
 
-echo DHCP > /desig
+# DHCP server
+apk add busybox-extras busybox-initscripts
+rc-update add udhcpd default
+
+awall enable isp-dhcp
+awall activate --force

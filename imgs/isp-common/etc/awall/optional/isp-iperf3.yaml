@@ -1,0 +1,12 @@
+---
+description: ISP Masquerade and services
+
+import: isp
+
+filter:
+    - { in: local, out: _fw, service: iperf3, action: accept }
+
+service:
+    iperf3:
+        - { proto: tcp, port: 5201 }
+        - { proto: udp, port: 5201 }

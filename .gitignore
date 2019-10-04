@@ -8,6 +8,9 @@ __pycache__
 .cache
 .coverage
 
+## virtual environment
+.env
+
 ## Configuration
 targets.ini
 

@@ -1,0 +1,17 @@
+---
+description: ISP Masquerade and services
+
+zone:
+    internet: { iface: internet }
+    local: { iface: wan }
+
+policy:
+    - { in: local, out: internet, action: accept }
+    - { in: _fw, out: internet, action: accept }
+    - { in: _fw, out: local, action: accept }
+
+filter:
+    - { in: local, out: _fw, service: ping, action: accept }
+
+snat:
+    - out: internet

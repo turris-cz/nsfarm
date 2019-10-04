@@ -1,0 +1,2 @@
+# Log to syslog
+UDHCPD_OPTS="-S"
