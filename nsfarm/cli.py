@@ -10,6 +10,7 @@ import base64
 def pexpect_flush(pexpect_handle):
     """Flush all input on pexpect. This effectively reads everything.
     """
+    # TODO fix: this timeouts if there is nothing to flush
     bufflen = 2048
     while len(pexpect_handle.read_nonblocking(bufflen)) == bufflen:
         pass
@@ -95,6 +96,7 @@ class Shell(Cli):
         r"(\r\n|\n\r|^).+? ($|#) ",
         r"(\r\n|\n\r|^)bash-.+?($|#) ",
         r"(\r\n|\n\r|^)root@[a-zA-Z0-9_-]*:",
+        r"(\r\n|\n\r|^).*root@turris.*#",  # TODO this is weird dual prompt from lxd ssh
         _NSF_PROMPT,
     ]
     # TODO compile prompt regexp to increase performance

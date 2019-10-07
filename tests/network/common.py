@@ -17,21 +17,21 @@ class InternetTests:
         "turris.cz",
         "google.com"
     ])
-    def test_ping(self, board_shell, server):
+    def test_ping(self, client_board, server):
         """Ping various IPv4 servers.
 
         We send only one ICMP packet to not flood and to be quickly done with it (the success takes less than second)
         """
-        board_shell.run("ping -c 1 '{}'".format(server))
+        client_board.run("ping -c 1 '{}'".format(server))
 
     @pytest.mark.parametrize("server", [
         "nic.cz",
         "turris.cz",
         "google.com"
     ])
-    def test_dns(self, board_shell, server):
+    def test_dns(self, client_board, server):
         """Try to resolve verious domain names.
         """
-        board_shell.run("nslookup '{}'".format(server))
+        client_board.run("nslookup '{}'".format(server))
 
     # TODO more excessive DNS testing
