@@ -1,5 +1,6 @@
 """Internal global LXD handle
 """
+import logging
 import pylxd
 
 IMAGES_SOURCE = "https://images.linuxcontainers.org"
@@ -16,9 +17,14 @@ def _profile_device(profile, checkfunc):
 def connect():
     """Make sure that we are connected to LXD.
     """
+    # Suppress logging of pylxd components
+    logging.getLogger('ws4py').setLevel(logging.ERROR)
+    logging.getLogger('urllib3').setLevel(logging.ERROR)
+    # Initialize LXD connection to linuximages.org
     global IMAGES
     if IMAGES is None:
         IMAGES = pylxd.Client(IMAGES_SOURCE)
+    # Initialize LXD connection to local server
     global LOCAL
     if LOCAL is None:
         LOCAL = pylxd.Client()

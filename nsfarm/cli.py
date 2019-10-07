@@ -3,7 +3,7 @@
 This ensures systematic logging and access to terminals. We implement two special terminal types at the moment. We have
 support for shell and u-boot.  They differ in a way how they handle prompt and methods they provide to user.
 """
-import pexpect
+import logging
 import base64
 
 
@@ -161,6 +161,41 @@ class Uboot(Cli):
     def output(self):
         return self._output
 
+
+class PexpectLogging:
+    """Logging for pexpect.
+
+    This emulates file object and is intended to be used with pexpect handler as logger.
+    """
+    _EXPECTED_EOL = b'\n\r'
+
+    def __init__(self, logger):
+        self._level = logging.INFO
+        self.logger = logger
+        self.linebuf = b''
+
+    def __del__(self):
+        if self.linebuf:
+            self._log(self.linebuf)
+
+    def _log(self, line):
+        self.logger.log(self._level, repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
+
+    def write(self, buf):
+        """Standard-like file write function.
+        """
+        jbuf = self.linebuf + buf
+        lines = jbuf.splitlines(keepends=True)
+        if lines[-1] or lines[-1][-1] not in self._EXPECTED_EOL:
+            # The last line is not terminated (no new line character) so just preserve it
+            self.linebuf = lines.pop()
+        for line in lines:
+            self._log(line)
+
+    def flush(self):
+        """Standard-like flush function.
+        """
+        # Just ignore flush
 
 # Notest on some of the hacks in this file
 #

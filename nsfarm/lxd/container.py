@@ -6,23 +6,27 @@ import itertools
 import hashlib
 import logging
 import pexpect
+from .. import cli
 from . import _lxd
 
 IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
 
 IMGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "imgs")
+LOGGER = logging.getLogger(__package__)
 
 
 class Container():
     """Generic container handle.
     """
+    # TODO log syslog somehow
 
-    def __init__(self, img_name, devices=[], internet=True):
+    def __init__(self, img_name, devices=(), internet=True):
         self._name = img_name
         self._internet = internet
         self._devices = tuple(devices)
         self._dpath = os.path.join(IMGS_DIR, img_name)
         self._fpath = self._dpath + ".sh"
+        self._logger = logging.getLogger("{}[{}]".format(__package__, img_name))
         # Verify existence of image definition
         if not os.path.isfile(self._fpath):
             raise Exception("There seems to be no file describing image: {}".format(self._fpath))
@@ -102,7 +106,7 @@ class Container():
             self._lxd_image = _lxd.LOCAL.images.get_by_alias(self._image_alias)
             return
         # We do not have appropriate image so prepare it
-        logging.info("Bootstrapping image: %s", self._image_alias)
+        LOGGER.warning("Bootstrapping image: %s", self._image_alias)
         image_source = {
             'type': 'image',
         }
@@ -126,13 +130,14 @@ class Container():
             # TODO found other way to match reason
             if not str(elxd).endswith("This container already exists"):
                 raise
-            logging.warning("Other instance is already bootsrapping image probably. "
+            LOGGER.warning("Other instance is already bootsrapping image probably. "
                             "Waiting for following container to go away: %s", container_name)
             while _lxd.LOCAL.containers.exists(container_name):
                 time.sleep(1)
             self.prepare_image()  # possibly get created image or try again
             return
         try:
+            # TODO log boostrap process
             # Copy script and files to container
             with open(self._fpath) as file:
                 container.files.put(IMAGE_INIT_PATH, file.read(), mode=700)
@@ -180,6 +185,7 @@ class Container():
             },
         }, wait=True)
         self._lxd_container.start(wait=True)
+        self._logger.debug("Container prepared: %s", self._lxd_container.name)
         # TODO we could somehow just let it create it and return from this method and wait later on when we realy need
         # container.
 
@@ -190,6 +196,7 @@ class Container():
         """
         if self._lxd_container is None:
             return  # No cleanup is required
+        self._logger.debug("Removing container: %s", self._lxd_container.name)
         # First freeze and remove devices
         self._lxd_container.freeze(wait=True)
         self._lxd_container.devices = dict()
@@ -200,12 +207,14 @@ class Container():
         self._lxd_container.stop()
         self._lxd_container = None
 
-    def pexpect(self, shell="/bin/sh"):
-        """Returns pexpect handle for shell in container.
+    def pexpect(self, command=["/bin/sh"]):
+        """Returns pexpect handle for command running in container.
         """
-        # TODO some logging of this session
         assert self._lxd_container is not None
-        return pexpect.spawn('lxc', ["exec", self._lxd_container.name, shell])
+        self._logger.debug("Running command: %s", command)
+        pexp = pexpect.spawn('lxc', ["exec", self._lxd_container.name] + command)
+        pexp.logfile_read = cli.PexpectLogging(logging.getLogger(self._logger.name + str(command)))
+        return pexp
 
     def __enter__(self):
         self.prepare()

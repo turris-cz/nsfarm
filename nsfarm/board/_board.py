@@ -2,6 +2,7 @@
 """
 import sys
 import time
+import logging
 import serial
 import serial.tools.miniterm
 from pexpect import fdpexpect
@@ -24,9 +25,8 @@ class Board:
         self.config = target_config
         # Open serial console to board
         self._serial = serial.Serial(self.config['serial'], 115200)
-        # TODO better and configurable logging
-        self.logfile = open("./{}.log".format(target), "wb")
-        self._pexpect = fdpexpect.fdspawn(self._serial, logfile=self.logfile)
+        self._pexpect = fdpexpect.fdspawn(self._serial)
+        self._pexpect.logfile_read = cli.PexpectLogging(logging.getLogger('{}[{}]'.format(__package__, target)))
         # Set board to some known state
         self.reset(True)  # Hold in reset state
 
