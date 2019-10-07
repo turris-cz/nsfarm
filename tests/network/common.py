@@ -5,30 +5,33 @@ These are implementation of tests that are run in environments environments and 
 import pytest
 # pylint: disable=no-self-use
 
+
 class InternetTests:
     """Tests for checking if connection to Internet is appropriate.
     """
 
     @pytest.mark.parametrize("server", [
         "172.16.1.1",  # ISP gateway
-        "217.31.205.50"  # nic.cz
+        "217.31.205.50",  # nic.cz
+        "nic.cz",
+        "turris.cz",
+        "google.com"
     ])
     def test_ping(self, board_shell, server):
-        """Ping various IPv4 addresses.
+        """Ping various IPv4 servers.
 
-        We send only one ICMP packet to not flood.
+        We send only one ICMP packet to not flood and to be quickly done with it (the success takes less than second)
         """
         board_shell.run("ping -c 1 '{}'".format(server))
 
-    @pytest.mark.parametrize("server", ["nic.cz", "turris.cz", "google.com"])
-    def test_ping_name(self, board_shell, server):
-        """Ping various IPv4 address using DNS record.
-        """
-        board_shell.run("ping -c 1 '{}'".format(server))
-
-    @pytest.mark.parametrize("server", ["nic.cz", "turris.cz", "google.com"])
+    @pytest.mark.parametrize("server", [
+        "nic.cz",
+        "turris.cz",
+        "google.com"
+    ])
     def test_dns(self, board_shell, server):
         """Try to resolve verious domain names.
         """
         board_shell.run("nslookup '{}'".format(server))
-# TODO more excessive DNS testing
+
+    # TODO more excessive DNS testing
