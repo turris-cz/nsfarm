@@ -26,7 +26,8 @@ You should also make sure that LXD is up and running on your system.
 In terms of hardware you need target router board of course. It has to be
 connected with appropriate USB-to-TTL converter and with at least one Ethernet
 port for WAN. The USB-to-TTL convert has to have CST and RST signals. For more
-info about hardware connection please see [hardware wiring](HARDWARE_WIRING.md).
+info about hardware connection please see [hardware
+wiring](docs/hardware_wiring.md).
 
 
 Usage

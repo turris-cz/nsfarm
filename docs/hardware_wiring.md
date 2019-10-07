@@ -57,7 +57,7 @@ RST connection is little bit more complicated. There is no on board pin for rese
 pin. The only easily accessible place is button at the back. You have to solder
 wire to in on the bottom of the board. The correct pin is the one closer to WAN
 port from two of the closest ones to edge of the PCB under button. You can see
-[illustrative photo](imgs/omnia-reboot.jpg) if you are not sure.
+[illustrative photo](resources/omnia-reboot.jpg) if you are not sure.
 
 
 How to connect CST pin please see section about board power shutdown. Connection
