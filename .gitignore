@@ -17,6 +17,7 @@ targets.ini
 ## Logs
 *.log
 *.log.*
+*.html
 
 ## Docs
 docs/_build/

@@ -12,6 +12,8 @@ pytest, pexpect and LXD.
 
 You need following software and its dependencies:
 * Python3
+* pytest (>=5.0)
+* pytest-html (>=2.0)
 * pexpect
 * pyserial
 * pylxd
@@ -41,6 +43,48 @@ pytest -T omnia
 
 You should read [tests writing guide](TESTS_WRITING.md) to see how you can write
 more tests and/or to understand current ones.
+
+### Print live logs
+NSFarm logs during its execution everything it can. This can later be used to
+diagnose test failures. It is also nice to see how your tests progress so you can
+enable live logging on console when tests are running. That can be done as follow:
+```sh
+pytest -T omnia --log-cli-level=DEBUG
+```
+You can choose any Python logging compatible level.
+
+In rule of thumb the levels used in NSFarm are as follow:
+* __DEBUG__: reports of NSFarm state changes and in general reports to be used
+  when NSFarm behavior is diagnosed.
+* __INFO__: on this level all console communication is logged.
+* __WARNING__: some non-standard behavior proceeds (like waiting for other
+  instance and so on).
+* __ERROR__: non-standard situation encountered (like concurrent instance is
+  running).
+
+Non-standard behavior and situations noted here are meant as something that is
+outside of tests scope but affects testing. The common effect is that tests
+execution can't proceed and NSFarm has to wait for something to complete.
+
+### HTML report
+Using _pytest-html_ it is possible to generate nice HTML report of test run.
+```sh
+pytest -T omnia --self-contained-html --html=report.html
+```
+You can change `report.html` to any other name or path.
+
+
+NSFarm utility
+--------------
+`nsfarm` is not only library but serves at the same time as utility Python
+program. It implements some common operations you might want to use.
+
+To invoke NSFarm utility you have to run in root of this project following:
+```sh
+python3 -m nsfarm
+```
+
+Use `-h` to see documentation and abilities of this utility.
 
 
 How it works

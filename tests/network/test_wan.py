@@ -27,6 +27,7 @@ class TestStatic(common.InternetTests):
         """Configure WAN to use static IP
         """
         with nsfarm.lxd.Container('isp-common', devices=[wan, ]) as container:
+            # TODO implement some utility class to set and revert uci configs on router
             board_shell.run("uci set network.wan.proto='static'")
             board_shell.run("uci set network.wan.ipaddr='172.16.1.42'")
             board_shell.run("uci set network.wan.netmask='255.240.0.0'")

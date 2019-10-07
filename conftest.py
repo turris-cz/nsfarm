@@ -27,6 +27,7 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    # TODO handle targets in nsfarm library for central management
     # Parse target configuration
     targets = configparser.ConfigParser()
     targets.read(os.path.expanduser("~/.nsfarm_targets.ini"))
