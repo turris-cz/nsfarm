@@ -30,8 +30,6 @@ class Container():
         # Verify existence of image definition
         if not os.path.isfile(self._fpath):
             raise Exception("There seems to be no file describing image: {}".format(self._fpath))
-        if not os.access(self._fpath, os.X_OK):
-            raise Exception("The file describing image is not executable: {}".format(self._fpath))
         if not os.path.isdir(self._dpath):
             self._dpath = None
         # Make sure that we are connected to LXD
