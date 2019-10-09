@@ -21,7 +21,9 @@ You need following software and its dependencies:
 You can install all Python libraries using `pip install -r requirements.txt`. It
 is suggested to either install them to system or to use `virtualenv`.
 
-You should also make sure that LXD is up and running on your system.
+You should also make sure that LXD is up and running on your system and is
+correctly configured. Please see [appropriate documentation](docs/lxd.md) on how
+to configure it.
 
 In terms of hardware you need target router board of course. It has to be
 connected with appropriate USB-to-TTL converter and with at least one Ethernet
@@ -42,8 +44,8 @@ NSFarm. You have to provide configured target with `-T` switch.
 pytest -T omnia
 ```
 
-You should read [tests writing guide](TESTS_WRITING.md) to see how you can write
-more tests and/or to understand current ones.
+You should read [tests writing guide](docs/tests_writing.md) to see how you can
+write more tests and/or to understand current ones.
 
 ### Print live logs
 NSFarm logs during its execution everything it can. This can later be used to
