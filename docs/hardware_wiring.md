@@ -128,10 +128,10 @@ board. There should be no other device on that network. To apply this
 configuration you can either use UCI:
 ```
 uci set network.nsfarm_wan=interface
-uci set network.nsfram_wan.type=bridge
-uci set network.nsfram_wan.proto=none
-uci add_list network.nsfram_wan.ifname=lan1.1
-uci add_list network.nsfram_wan.ifname=lan2
+uci set network.nsfarm_wan.type=bridge
+uci set network.nsfarm_wan.proto=none
+uci add_list network.nsfarm_wan.ifname=lan1.1
+uci add_list network.nsfarm_wan.ifname=lan2
 uci commit network
 ```
 or you can add to file `/etc/config/network` section like this:
