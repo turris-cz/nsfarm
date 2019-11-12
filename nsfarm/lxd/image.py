@@ -66,6 +66,7 @@ class Image:
                     self._devices.pop(param, None)
             else:
                 raise LXDImageParameterError(self.name, param)
+
         self._wants_internet = self._devices.pop(
             "internet", self._parent.wants_internet if isinstance(self._parent, Image) else False)
 

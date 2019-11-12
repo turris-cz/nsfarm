@@ -1,0 +1,10 @@
+---
+description: ISP PPPoE service
+
+import: isp
+
+zone:
+    local: { iface: ppp+ }
+
+filter:
+    - { in: local, out: _fw, service: dhcp, action: accept }

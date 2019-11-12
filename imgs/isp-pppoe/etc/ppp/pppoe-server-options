@@ -1,0 +1,46 @@
+# PPP options for the PPPoE server
+# LIC: GPL
+
+debug
+kdebug 6
+
+#require-mppe
+#require-mppe-128
+
+#refuse-pap
+#refuse-chap
+refuse-mschap
+#refuse-mschap-v2
+
+require-pap
+require-chap
+#require-mschap
+require-mschap-v2
+
+
+noproxyarp
+
+idle 0
+
+show-password
+
+#login
+
+#
+mtu 1480
+mru 1480
+
+#
+lcp-echo-interval 5
+lcp-echo-failure 8
+
+#
+ms-dns 1.1.1.1
+ms-dns 8.8.8.8
+
+#
+plugin rp-pppoe.so
+wan
+
+logfile /var/log/pppoe-server.log
+

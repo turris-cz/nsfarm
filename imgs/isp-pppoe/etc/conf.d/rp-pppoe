@@ -1,0 +1,1 @@
+PPPOE_PARAMS="-S Jsem-pryncezna-vole! -N 16 -s -r -u -k -I wan -m 1412  -q /usr/sbin/pppd -Q /usr/sbin/pppoe"

@@ -2,10 +2,10 @@
 
 This checks if we are able to support various ISP configurations.
 """
-import time
 import pytest
 import nsfarm.lxd
 from . import common
+import pdb
 # pylint: disable=no-self-use
 
 # TODO: add support for IPV6, currently we only test IPv4
@@ -16,8 +16,8 @@ class TestStatic(common.InternetTests):
     """Test WAN with network settings configured statically.
     """
 
-    @pytest.fixture(scope="class", autouse=True)
-    def client(self, lxd, device_map, client_board):
+    @pytest.fixture(name="client", scope="class", autouse=True)
+    def fixture_client(self, lxd, device_map, client_board):
         """Configure WAN to use static IP
         """
         print("We are in client fixture once")
@@ -46,8 +46,8 @@ class TestDHCP(common.InternetTests):
     """Test WAN with network settings provided by DHCP server.
     """
 
-    @pytest.fixture(scope="class", autouse=True)
-    def client(self, lxd, device_map, board, client_board):
+    @pytest.fixture(name="client", scope="class", autouse=True)
+    def fixture_client(self, lxd, device_map, client_board):
         """Configure WAN to use DHCP
         """
         with nsfarm.lxd.Container(lxd, 'isp-dhcp', device_map) as container:
@@ -59,3 +59,27 @@ class TestDHCP(common.InternetTests):
             yield client_board
             client_board.run("uci set network.wan.proto='none'")
             client_board.run("uci commit network")
+
+
+@pytest.mark.debug
+class TestPPPoE(common.InternetTests):
+    """Test of PPPoE
+    """
+
+    @pytest.fixture(name="client", scope="class", autouse=True)
+    def fixture_client(self, lxd, device_map, client_board):
+        with nsfarm.lxd.Container(lxd, 'isp-pppoe', device_map) as container:
+            client_board.run("uci set network.wan.proto='pppoe'")
+            client_board.run("uci set network.wan.username='turris'")
+            client_board.run("uci set network.wan.password='turris'")
+            client_board.run("uci del network.wan.auto", None)
+            client_board.run("uci commit network")
+            client_board.run('/etc/init.d/network restart')
+            client_board.run('while ! ping -c1 -w1 172.16.1.1 >/dev/null; do true; done')
+            yield client_board
+            commands = ["uci set network.wan.proto='none'",
+                        "uci del network.wan.username",
+                        "uci del network.wan.password",
+                        "uci set network.wan.auto='1'",
+                        "uci commit network"]
+            client_board.run(" && ".join(commands))
