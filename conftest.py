@@ -6,7 +6,6 @@ Never add different scope to these fixtures. Keep it always as "function" (defau
 """
 import pytest
 import os
-import argparse
 import configparser
 
 pytest_plugins = ("pytest_html", )

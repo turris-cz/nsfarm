@@ -1,18 +1,24 @@
-"""CLI comunication helper classes based on pexpect.
+"""CLI communication helper classes based on pexpect.
 
 This ensures systematic logging and access to terminals. We implement two special terminal types at the moment. We have
 support for shell and u-boot.  They differ in a way how they handle prompt and methods they provide to user.
 """
+# Notest on some of the hacks in this file:
+#
+# There are new line character matches in regular expressions. Correct one is \r\n but some serial controlles for some
+# reason also use \n\r so we match both alternatives.
+#
 import logging
 import base64
+
+_FLUSH_BUFFLEN = 2048
 
 
 def pexpect_flush(pexpect_handle):
     """Flush all input on pexpect. This effectively reads everything.
     """
     # TODO fix: this timeouts if there is nothing to flush
-    bufflen = 2048
-    while len(pexpect_handle.read_nonblocking(bufflen)) == bufflen:
+    while len(pexpect_handle.read_nonblocking(_FLUSH_BUFFLEN)) == _FLUSH_BUFFLEN:
         pass
 
 
@@ -46,7 +52,7 @@ class Cli:
     def command(self, cmd=""):
         """Calls pexpect sendline and expect cmd with trailing new line.
 
-        This is handy when you are comunicating with console that echoes input back. This effectively removes sent
+        This is handy when you are communicating with console that echoes input back. This effectively removes sent
         command from output.
         """
         self.sendline(cmd)
@@ -55,21 +61,24 @@ class Cli:
         self.expect_exact(cmd)
         self.expect_exact(["\r\n", "\n\r"])
 
-    def run(self, cmd="", exit_code=lambda ec: ec == 0, **kwargs):
+    @staticmethod
+    def _run_exit_code_zero(exit_code):
+        if exit_code != 0:
+            raise Exception("Command exited with non-zero code: {}".format(exit_code))
+
+    def run(self, cmd="", exit_code=_run_exit_code_zero, **kwargs):
         """Run given command and follow output until prompt is reached and return exit code with optional automatic
-        check. This is same as if you would call cmd() and prompt() witch asserting exit_code.
+        check. This is same as if you would call cmd() and prompt() while checking exit_code.
 
         cmd: command to be executed
-        exit_code: lambda function verifying exit code or None to skip assert
+        exit_code: lambda function verifying exit code or None to skip default check
         All other key-word arguments are passed to prompt call.
 
-        Returns exit code of command.
+        Returns result of exit_code function or exit code of command if exit_code is None.
         """
         self.command(cmd)
-        ec = self.prompt(**kwargs)
-        if exit_code is not None:
-            assert exit_code(ec)
-        return exit_code
+        ecode = self.prompt(**kwargs)
+        return ecode if exit_code is None else exit_code(ecode)
 
     def match(self, index):
         """Returns located match in previously matched output.
@@ -121,7 +130,7 @@ class Shell(Cli):
 
         This returns bytes with content of file from path.
         """
-        self_sh.run("base64 '{}'".format(path))
+        self._sh.run("base64 '{}'".format(path))
         return base64.b64decode(self._sh.output())
 
     def file_write(self, path, content):
@@ -133,7 +142,8 @@ class Shell(Cli):
         self._sh.sendline("base64 --decode > '{}'".format(path))
         self._sh.sendline(base64.b64encode(content))
         self._sh.sendeof()
-        assert self._sh.prompt() == 0
+        if self._sh.prompt() != 0:
+            raise Exception("Writing file failed with exit code: {}".format(self._sh.prompt()))
 
     @property
     def output(self):
@@ -198,8 +208,3 @@ class PexpectLogging:
         """Standard-like flush function.
         """
         # Just ignore flush
-
-# Notest on some of the hacks in this file
-#
-# There are new line character matches in regular expressions. Correct one is \r\n but some serial controlles for some
-# reason also use \n\r so we match both alternatives.

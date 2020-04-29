@@ -15,7 +15,7 @@ IMGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__
 LOGGER = logging.getLogger(__package__)
 
 
-class Container():
+class Container:
     """Generic container handle.
     """
     # TODO log syslog somehow
@@ -24,18 +24,18 @@ class Container():
         self._name = img_name
         self._internet = internet
         self._devices = tuple(devices)
-        self._dpath = os.path.join(IMGS_DIR, img_name)
-        self._fpath = self._dpath + ".sh"
+        self._dir_path = os.path.join(IMGS_DIR, img_name)
+        self._file_path = self._dir_path + ".sh"
         self._logger = logging.getLogger("{}[{}]".format(__package__, img_name))
         # Verify existence of image definition
-        if not os.path.isfile(self._fpath):
-            raise Exception("There seems to be no file describing image: {}".format(self._fpath))
-        if not os.path.isdir(self._dpath):
-            self._dpath = None
+        if not os.path.isfile(self._file_path):
+            raise Exception("There seems to be no file describing image: {}".format(self._file_path))
+        if not os.path.isdir(self._dir_path):
+            self._dir_path = None
         # Make sure that we are connected to LXD
         _lxd.connect()
         # Get parent
-        with open(self._fpath) as file:
+        with open(self._file_path) as file:
             # This reads second line of file while initial hash removed
             parent = next(itertools.islice(file, 1, 2))[1:].strip()
         self._parent = None
@@ -60,14 +60,14 @@ class Container():
         else:
             md5sum.update(self._parent.fingerprint.encode())
         # File defining container
-        with open(self._fpath, "rb") as file:
+        with open(self._file_path, "rb") as file:
             md5sum.update(file.read())
         # Additional nodes from directory
-        if self._dpath:
-            nodes = os.listdir(self._dpath)
+        if self._dir_path:
+            nodes = os.listdir(self._dir_path)
             while nodes:
                 node = nodes.pop()
-                path = os.path.join(self._dpath, node)
+                path = os.path.join(self._dir_path, node)
                 md5sum.update(node.encode())
                 if os.path.isdir(path):
                     nodes += [os.path.join(node, nd) for nd in os.listdir(path)]
@@ -79,18 +79,6 @@ class Container():
                     # For link include its target as well
                     md5sum.update(os.readlink(path).encode())
         return md5sum.hexdigest()
-
-    def _container_name(self, prefix="nsfarm"):
-        name = "{}-{}-{}".format(
-            prefix,
-            self._name,
-            os.getpid())
-        if _lxd.LOCAL.containers.exists(name):
-            i = 1
-            while _lxd.LOCAL.containers.exists("{}-{}".format(name, i)):
-                i += 1
-            name = "{}-{}".format(name, i)
-        return name
 
     def prepare_image(self):
         """Prepare image for this container if not already prepared.
@@ -137,10 +125,10 @@ class Container():
         try:
             # TODO log boostrap process
             # Copy script and files to container
-            with open(self._fpath) as file:
+            with open(self._file_path) as file:
                 container.files.put(IMAGE_INIT_PATH, file.read(), mode=700)
-            if self._dpath:
-                container.files.recursive_put(self._dpath, "/")
+            if self._dir_path:
+                container.files.recursive_put(self._dir_path, "/")
             # Run script to bootstrap image
             container.start(wait=True)
             try:
@@ -187,6 +175,15 @@ class Container():
         # TODO we could somehow just let it create it and return from this method and wait later on when we realy need
         # container.
 
+    def _container_name(self, prefix="nsfarm"):
+        name = "{}-{}-{}".format(prefix, self._name, os.getpid())
+        if _lxd.LOCAL.containers.exists(name):
+            i = 1
+            while _lxd.LOCAL.containers.exists("{}-{}".format(name, i)):
+                i += 1
+            name = "{}-{}".format(name, i)
+        return name
+
     def cleanup(self):
         """Remove container if it exists.
 
@@ -205,7 +202,7 @@ class Container():
         self._lxd_container.stop()
         self._lxd_container = None
 
-    def pexpect(self, command=["/bin/sh"]):
+    def pexpect(self, command=("/bin/sh",)):
         """Returns pexpect handle for command running in container.
         """
         assert self._lxd_container is not None

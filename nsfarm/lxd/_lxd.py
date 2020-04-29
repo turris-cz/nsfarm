@@ -10,8 +10,8 @@ IMAGES = None
 LOCAL = None
 
 
-def _profile_device(profile, checkfunc):
-    return True not in {checkfunc(dev) for _, dev in profile.devices.items()}
+def _profile_device(profile, check_func):
+    return True not in {check_func(dev) for _, dev in profile.devices.items()}
 
 
 def connect():
