@@ -12,7 +12,8 @@ from . import _lxd
 IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
 
 IMGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "imgs")
-LOGGER = logging.getLogger(__package__)
+
+logger = logging.getLogger(__package__)
 
 
 class Container:
@@ -92,7 +93,7 @@ class Container:
             self._lxd_image = _lxd.LOCAL.images.get_by_alias(self._image_alias)
             return
         # We do not have appropriate image so prepare it
-        LOGGER.warning("Bootstrapping image: %s", self._image_alias)
+        logger.warning("Bootstrapping image: %s", self._image_alias)
         image_source = {
             'type': 'image',
         }
@@ -116,7 +117,7 @@ class Container:
             # TODO found other way to match reason
             if not str(elxd).endswith("This container already exists"):
                 raise
-            LOGGER.warning("Other instance is already bootsrapping image probably. "
+            logger.warning("Other instance is already bootsrapping image probably. "
                             "Waiting for following container to go away: %s", container_name)
             while _lxd.LOCAL.containers.exists(container_name):
                 time.sleep(1)

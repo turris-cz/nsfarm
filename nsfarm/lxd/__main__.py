@@ -9,7 +9,7 @@ from . import Container
 def parser(parser):
     subparsers = parser.add_subparsers()
 
-    clean = subparsers.add_parser('clean', help='Remove old and unused packages')
+    clean = subparsers.add_parser('clean', help='Remove old and unused containers')
     clean.set_defaults(lxd_op='clean')
     clean.add_argument(
         'DELTA',
@@ -82,7 +82,9 @@ def parse_deltatime(spec):
 def op_clean(args, _):
     """Handler for command line operation clean
     """
-    utils.clean(parse_deltatime(args.DELTA), dry_run=args.dry_run)
+    removed = utils.clean(parse_deltatime(args.DELTA), dry_run=args.dry_run)
+    if removed:
+        print('\n'.join(removed))
     sys.exit(0)
 
 

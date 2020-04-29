@@ -7,16 +7,21 @@ import dateutil.parser
 from . import container
 from . import _lxd
 
+logger = logging.getLogger(__package__)
+
 
 def clean(delta, dry_run=False):
     """Remove all images that were not used for longer then given delta.
 
     delta: this should be instance of datetime.relativedelta
     dry_run: do not remove anything only report alias of those to be removed on stdout
+
+    Returns list of (to be) removed images.
     """
     _lxd.connect()
     since = datetime.today() - delta
 
+    removed = list()
     for img in _lxd.LOCAL.images.all():
         if next((alias for alias in img.aliases if alias["name"].startswith("nsfarm/")), None) is None:
             continue
@@ -25,11 +30,11 @@ def clean(delta, dry_run=False):
             img.last_used_at if not img.last_used_at.startswith("0001-01-01") else img.uploaded_at
         ).replace(tzinfo=None)
         if last_used < since:
+            removed.append(img.aliases[0]["name"])
             if not dry_run:
-                logging.warning("Removing image: %s %s", img.aliases[0]["name"], img.fingerprint)
+                logger.warning("Removing image: %s %s", img.aliases[0]["name"], img.fingerprint)
                 img.delete()
-            else:
-                print(img.aliases[0]["name"])
+    return removed
 
 
 def all_images():
@@ -49,10 +54,10 @@ def bootstrap(imgs=None):
     """
     success = True
     for img in all_images() if imgs is None else imgs:
-        logging.info("Trying to bootstrap: %s", img)
+        logger.info("Trying to bootstrap: %s", img)
         try:
             container.Container(img).prepare_image()
-        except Exception as exc:
+        except Exception:
             success = False
-            logging.exception("Bootstrap failed for: %s", img)
+            logger.exception("Bootstrap failed for: %s", img)
     return success
