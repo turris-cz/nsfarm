@@ -1,13 +1,17 @@
-"""Internal global LXD handle
+"""Internal global LXD handle.
 """
 import logging
 import pylxd
 
 IMAGES_SOURCE = "https://images.linuxcontainers.org"
 
+ROOT_PROFILE = "nsfarm-root"
+INTERNET_PROFILE = "nsfarm-internet"
+REQUIRED_PROFILES = (ROOT_PROFILE, INTERNET_PROFILE)
+
 # Global LXD handles
-IMAGES = None
-LOCAL = None
+images = None
+local = None
 
 
 def _profile_device(profile, check_func):
@@ -21,20 +25,20 @@ def connect():
     logging.getLogger('ws4py').setLevel(logging.ERROR)
     logging.getLogger('urllib3').setLevel(logging.ERROR)
     # Initialize LXD connection to linuximages.org
-    global IMAGES
-    if IMAGES is None:
-        IMAGES = pylxd.Client(IMAGES_SOURCE)
+    global images
+    if images is None:
+        images = pylxd.Client(IMAGES_SOURCE)
     # Initialize LXD connection to local server
-    global LOCAL
-    if LOCAL is None:
-        LOCAL = pylxd.Client()
+    global local
+    if local is None:
+        local = pylxd.Client()
         # Verify profiles
-        for name in ("nsfarm-root", "nsfarm-internet"):
-            if not LOCAL.profiles.exists(name):
+        for name in REQUIRED_PROFILES:
+            if not local.profiles.exists(name):
                 # TODO better exception
                 raise Exception("Missing required LXD profile: {}".format(name))
-        root = LOCAL.profiles.get("nsfarm-root")
-        internet = LOCAL.profiles.get("nsfarm-internet")
+        root = local.profiles.get(ROOT_PROFILE)
+        internet = local.profiles.get(INTERNET_PROFILE)
         if _profile_device(root, lambda dev: dev["type"] == "disk"):
             # TODO better exception
             raise Exception("nsfarm-root does not provide disk device")

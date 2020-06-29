@@ -6,6 +6,7 @@ import itertools
 import hashlib
 import logging
 import pexpect
+import pylxd
 from .. import cli
 from . import _lxd
 
@@ -43,7 +44,7 @@ class Container:
         if parent.startswith("nsfarm:"):
             self._parent = Container(parent[7:])
         elif parent.startswith("images:"):
-            self._parent = _lxd.IMAGES.images.get_by_alias(parent[7:])
+            self._parent = _lxd.images.images.get_by_alias(parent[7:])
         else:
             raise Exception("The file has parent from unknown source: {}: {}".format(parent, self.fpath))
         # Calculate identity hash and generate image name
@@ -89,8 +90,8 @@ class Container:
         """
         if self._lxd_image:
             return
-        if _lxd.LOCAL.images.exists(self._image_alias, alias=True):
-            self._lxd_image = _lxd.LOCAL.images.get_by_alias(self._image_alias)
+        if _lxd.local.images.exists(self._image_alias, alias=True):
+            self._lxd_image = _lxd.local.images.get_by_alias(self._image_alias)
             return
         # We do not have appropriate image so prepare it
         logger.warning("Bootstrapping image: %s", self._image_alias)
@@ -108,7 +109,7 @@ class Container:
             image_source["alias"] = self._parent.fingerprint
         container_name = "nsfarm-bootstrap-{}-{}".format(self._name, self._hash)
         try:
-            container = _lxd.LOCAL.containers.create({
+            container = _lxd.local.containers.create({
                 'name': container_name,
                 'profiles': ['nsfarm-root', 'nsfarm-internet'],
                 'source': image_source
@@ -119,7 +120,7 @@ class Container:
                 raise
             logger.warning("Other instance is already bootsrapping image probably. "
                             "Waiting for following container to go away: %s", container_name)
-            while _lxd.LOCAL.containers.exists(container_name):
+            while _lxd.local.containers.exists(container_name):
                 time.sleep(1)
             self.prepare_image()  # possibly get created image or try again
             return
@@ -161,7 +162,7 @@ class Container:
         for device in self._devices:
             devices.update(device.acquire(self))
         # Create and start container
-        self._lxd_container = _lxd.LOCAL.containers.create({
+        self._lxd_container = _lxd.local.containers.create({
             'name': self._container_name(),
             'ephemeral': True,
             'profiles': profiles,
@@ -178,9 +179,9 @@ class Container:
 
     def _container_name(self, prefix="nsfarm"):
         name = "{}-{}-{}".format(prefix, self._name, os.getpid())
-        if _lxd.LOCAL.containers.exists(name):
+        if _lxd.local.containers.exists(name):
             i = 1
-            while _lxd.LOCAL.containers.exists("{}-{}".format(name, i)):
+            while _lxd.local.containers.exists("{}-{}".format(name, i)):
                 i += 1
             name = "{}-{}".format(name, i)
         return name
@@ -208,7 +209,7 @@ class Container:
         """
         assert self._lxd_container is not None
         self._logger.debug("Running command: %s", command)
-        pexp = pexpect.spawn('lxc', ["exec", self._lxd_container.name] + command)
+        pexp = pexpect.spawn('lxc', ["exec", self._lxd_container.name] + list(command))
         pexp.logfile_read = cli.PexpectLogging(logging.getLogger(self._logger.name + str(command)))
         return pexp
 
