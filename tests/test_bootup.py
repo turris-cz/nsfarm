@@ -22,8 +22,6 @@ def test_syslog_ng(client_board):
     "sshd",
     "syslog-ng",
     "ubusd",
-    "watchdog",
-
 ])
 def test_processes(client_board, process):
     """Check that various essential processes are running.
