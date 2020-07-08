@@ -22,6 +22,14 @@ def pexpect_flush(pexpect_handle):
         pass
 
 
+def run_exit_code_zero(exit_code):
+    """Default handler for Cli.run exit_code parameter.
+    This checks if exit code is zero and raises exception if it is not.
+    """
+    if exit_code != 0:
+        raise Exception("Command exited with non-zero code: {}".format(exit_code))
+
+
 class Cli:
     """This is generic abstraction on top of pexpect for command line interface.
     """
@@ -61,12 +69,7 @@ class Cli:
         self.expect_exact(cmd)
         self.expect_exact(["\r\n", "\n\r"])
 
-    @staticmethod
-    def _run_exit_code_zero(exit_code):
-        if exit_code != 0:
-            raise Exception("Command exited with non-zero code: {}".format(exit_code))
-
-    def run(self, cmd="", exit_code=_run_exit_code_zero, **kwargs):
+    def run(self, cmd="", exit_code=run_exit_code_zero, **kwargs):
         """Run given command and follow output until prompt is reached and return exit code with optional automatic
         check. This is same as if you would call cmd() and prompt() while checking exit_code.
 
