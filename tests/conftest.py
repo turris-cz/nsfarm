@@ -6,8 +6,9 @@ import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
 
+
 ########################################################################################################################
-## Resources shared among all tests ####################################################################################
+# Resources shared among all tests #####################################################################################
 
 @pytest.fixture(scope="session", name="board", params=[pytest.param(None, marks=pytest.mark.serial)])
 def fixture_board(request):
@@ -35,7 +36,7 @@ def fixture_lan1(request):
 
 
 ########################################################################################################################
-## Boot and setup fixtures #############################################################################################
+# Boot and setup fixtures ##############################################################################################
 
 @pytest.fixture(name="board_serial", scope="session")
 def fixture_board_serial(request, board, wan):
@@ -57,31 +58,41 @@ def fixture_board_root_password(request, board_serial):
     return password
 
 
-@pytest.fixture(name="client_board", scope="session")
-def fixture_client_board(board, board_serial, board_root_password, lan1):
+@pytest.fixture(name="client_board", scope="module")
+def fixture_client_board(board_serial, board_root_password, lan1_client):
     """Starts client on LAN1 and connect to board using SSH.
     Provides instance of nsfarm.cli.Shell() connected to board shell using SSH trough client container.
     """
     # Let's have syslog on serial console as well as kernel log
-    board_serial.command('tail -f /var/log/messages')
+    #board_serial.command('tail -f /var/log/messages')
     # Now spawn client container and connect
-    with nsfarm.lxd.Container('client', devices=[lan1, ], internet=False) as container:
-        nsfarm.cli.Shell(container.pexpect()).run('wait4network')
-        pexp = container.pexpect(['ssh', '192.168.1.1'])
-        pexp.expect_exact("root@192.168.1.1's password:")
-        pexp.sendline(board_root_password)
-        pexp.expect_exact("root@turris:")
-        yield nsfarm.cli.Shell(pexp, flush=False)  # TODO drop this flush disable when it works
+    nsfarm.cli.Shell(lan1_client.pexpect()).run('wait4network')
+    pexp = lan1_client.pexpect(['ssh', '192.168.1.1'])
+    pexp.expect_exact("root@192.168.1.1's password:")
+    pexp.sendline(board_root_password)
+    pexp.expect_exact("root@turris:")
+    yield nsfarm.cli.Shell(pexp, flush=False)  # TODO drop this flush disable when it works
     # Kill tail -f on serial console
-    board_serial.send('\x03')
-    board_serial.prompt()
+    #board_serial.send('\x03')
+    #board_serial.prompt()
 
 
 ########################################################################################################################
-## Standard configuration ##############################################################################################
+# Common containers ####################################################################################################
 
-@pytest.fixture(scope="session")
-def basic_config(client_board, wan):
+@pytest.fixture(name="lan1_client", scope="module")
+def fixture_lan1_client(lan1):
+    """Starts client container on LAN1 and provides it.
+    """
+    with nsfarm.lxd.Container('client', devices=[lan1, ], internet=False) as container:
+        yield container
+
+
+########################################################################################################################
+# Standard configuration ###############################################################################################
+
+@pytest.fixture(name="basic_isp", scope="module")
+def fixture_basic_isp(client_board, wan):
     """Basic config we consider general. It provides you with configured WAN.
 
     Returns handle for ISP container on WAN interface.
