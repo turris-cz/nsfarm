@@ -53,7 +53,7 @@ UART is located at right front of the PCB. There are four pins. You should
 connect, from left, ground (GND), transmitted data (RxD) and received data (RxD)
 pins of you serial cable.
 
-RST connection is little bit more complicated. There is no on board pin for reset
+RTS connection is little bit more complicated. There is no on board pin for reset
 pin. The only easily accessible place is button at the back. You have to solder
 wire to in on the bottom of the board. The correct pin is the one closer to WAN
 port from two of the closest ones to edge of the PCB under button. You can see
