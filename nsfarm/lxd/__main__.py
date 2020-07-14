@@ -14,7 +14,8 @@ def parser(parser):
     clean.add_argument(
         'DELTA',
         nargs='?',
-        default='1w',
+        default=dateutil.relativedelta.relativedelta(weeks=1),
+        type=parse_deltatime,
         help="""Time delta for how long image should not be used to be cleaned (removed). In default if not specified
         '1w' is used. Format is expect to be a number with suffix. Supported suffixes are m(inute), h(our), d(ay) and
         w(eek).
@@ -75,14 +76,14 @@ def parse_deltatime(spec):
             delta += trans[char](int(num))
             num = ""
         else:
-            raise ValueError("Invalid character '{}' in time delta specification: {}".format(char, spec))
+            raise ValueError(f"Invalid character '{char}' in time delta specification: {spec}")
     return delta
 
 
 def op_clean(args, _):
     """Handler for command line operation clean
     """
-    removed = utils.clean(parse_deltatime(args.DELTA), dry_run=args.dry_run)
+    removed = utils.clean(args.DELTA, dry_run=args.dry_run)
     if removed:
         print('\n'.join(removed))
     sys.exit(0)

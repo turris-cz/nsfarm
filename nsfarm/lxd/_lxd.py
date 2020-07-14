@@ -15,7 +15,7 @@ local = None
 
 
 def _profile_device(profile, check_func):
-    return True not in {check_func(dev) for _, dev in profile.devices.items()}
+    return any(check_func(dev) for dev in profile.devices.values())
 
 
 def connect():
@@ -36,12 +36,12 @@ def connect():
         for name in REQUIRED_PROFILES:
             if not local.profiles.exists(name):
                 # TODO better exception
-                raise Exception("Missing required LXD profile: {}".format(name))
+                raise Exception(f"Missing required LXD profile: {name}")
         root = local.profiles.get(ROOT_PROFILE)
         internet = local.profiles.get(INTERNET_PROFILE)
-        if _profile_device(root, lambda dev: dev["type"] == "disk"):
+        if not _profile_device(root, lambda dev: dev["type"] == "disk"):
             # TODO better exception
             raise Exception("nsfarm-root does not provide disk device")
-        if _profile_device(internet, lambda dev: dev["type"] == "nic" and dev["name"] == "internet"):
+        if not _profile_device(internet, lambda dev: dev["type"] == "nic" and dev["name"] == "internet"):
             # TODO better exception
             raise Exception("nsfarm-internet does not provide appropriate nic")

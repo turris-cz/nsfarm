@@ -11,18 +11,12 @@ from . import common
 # TODO: add support for IPV6, currently we only test IPv4
 
 
-def _apply(client_board):
-    client_board.run("uci commit network")
-    client_board.run("/etc/init.d/network restart")
-    client_board.run("while ! ip route | grep -q default; do sleep 1; done")  # Wait for default route
-
-
 class TestStatic(common.InternetTests):
     """Test WAN with network settings configured statically.
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def client(self, client_board, wan):
+    def client(self, board, client_board, wan):
         """Configure WAN to use static IP
         """
         print("We are in client fixture once")
@@ -33,7 +27,10 @@ class TestStatic(common.InternetTests):
             client_board.run("uci set network.wan.netmask='255.240.0.0'")
             client_board.run("uci set network.wan.gateway='172.16.1.1'")
             client_board.run("uci set network.wan.dns='1.1.1.1'")  # TODO configure to ISP
-            _apply(client_board)
+            client_board.run("uci commit network")
+            client_board.run("/etc/init.d/network restart")
+            client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
+            time.sleep(3)  # Wait just a bit to ensure that network is up and running
             yield client_board
             client_board.run("uci set network.wan.proto='none'")
             client_board.run("uci delete network.wan.ipaddr")
@@ -54,7 +51,9 @@ class TestDHCP(common.InternetTests):
         with nsfarm.lxd.Container('isp-dhcp', devices=[wan, ]):
             client_board.run("uci set network.wan.proto='dhcp'")
             client_board.run("uci commit network")
-            _apply(client_board)
+            client_board.run("/etc/init.d/network restart")
+            client_board.run("while ! ip route | grep -q default; do sleep 1; done")
+            time.sleep(1)  # Wait just a bit to ensure that network is up and running
             yield client_board
             client_board.run("uci set network.wan.proto='none'")
             client_board.run("uci commit network")

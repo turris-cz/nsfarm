@@ -35,7 +35,7 @@ def pytest_configure(config):
     # Set target configuration
     target = config.getoption("-T")
     if target not in targets:
-        raise Exception("No configuration for target: {}".format(target))
+        raise Exception(f"No configuration for target: {target}")
     setattr(config, "target_config", targets[target])
 
 
@@ -43,7 +43,7 @@ def pytest_runtest_setup(item):
     board = item.config.target_config["board"]
     for boards in item.iter_markers(name="board"):
         if board not in boards.args:
-            pytest.skip("test is not compatible with target: {}".format(board))
+            pytest.skip(f"test is not compatible with target: {board}")
     for conn in ("serial", "wan", "lan1", "lan2"):
         if item.get_closest_marker(conn) is not None and conn not in item.config.target_config:
-            pytest.skip("test requires connection: {}".format(conn))
+            pytest.skip(f"test requires connection: {conn}")

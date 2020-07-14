@@ -27,7 +27,8 @@ def run_exit_code_zero(exit_code):
     This checks if exit code is zero and raises exception if it is not.
     """
     if exit_code != 0:
-        raise Exception("Command exited with non-zero code: {}".format(exit_code))
+        raise Exception(f"Command exited with non-zero code: {exit_code}")
+    return 0
 
 
 class Cli:
@@ -45,6 +46,7 @@ class Cli:
 
     def prompt(self, **kwargs):
         """Follow output until prompt is reached and parse it.  Exit code is returned.
+        All keyword arguments are passed to pexpect's expect call.
         """
         raise NotImplementedError
 
@@ -69,12 +71,14 @@ class Cli:
         self.expect_exact(cmd)
         self.expect_exact(["\r\n", "\n\r"])
 
-    def run(self, cmd="", exit_code=run_exit_code_zero, **kwargs):
+    def run(self, cmd: typing.Optional[str] = "",
+            exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero,
+            **kwargs):
         """Run given command and follow output until prompt is reached and return exit code with optional automatic
         check. This is same as if you would call cmd() and prompt() while checking exit_code.
 
         cmd: command to be executed
-        exit_code: lambda function verifying exit code or None to skip default check
+        exit_code: function verifying exit code or None to skip default check
         All other key-word arguments are passed to prompt call.
 
         Returns result of exit_code function or exit code of command if exit_code is None.
@@ -102,17 +106,17 @@ class Shell(Cli):
 
     This is tested to handle busybox and bash.
     """
+    _COLUMNS_NUM = 800
     _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?)\$ '"
     _NSF_PROMPT = r"(\r\n|\n\r|^)nsfprompt:([0-9]+)($|#) "
     _INITIAL_PROMPTS = [
         r"(\r\n|\n\r|^).+? ($|#) ",
         r"(\r\n|\n\r|^)bash-.+?($|#) ",
         r"(\r\n|\n\r|^)root@[a-zA-Z0-9_-]*:",
-        r"(\r\n|\n\r|^).*root@turris.*#",  # TODO this is weird dual prompt from lxd ssh
+        r"(\r\n|\n\r|^).*root@turris.*#",  # Note: this is weird dual prompt from lxd ssh
         _NSF_PROMPT,
     ]
     # TODO compile prompt regexp to increase performance
-    # TODO the width of terminal is limited and command function fails with long commands
 
     def __init__(self, pexpect_handle, flush=True):
         super().__init__(pexpect_handle, flush=flush)
@@ -121,10 +125,18 @@ class Shell(Cli):
         self.expect(self._INITIAL_PROMPTS)
         # Now sanitize prompt format
         self.run(self._SET_NSF_PROMPT)
+        # And set huge number of columns to fix any command we throw at it
+        self.run(f"stty columns {self._COLUMNS_NUM}")
 
     def prompt(self, **kwargs):
         self.expect(self._NSF_PROMPT, **kwargs)
         return int(self.match(2))
+
+    def command(self, cmd=""):
+        # 20 characters are removed as those are approximately for prompt
+        if len(cmd) >= (self._COLUMNS_NUM - 20):
+            raise Exception("Command probably won't fit to terminal. Split it or increase number of columns.")
+        return super().command(cmd)
 
     def file_read(self, path):
         """Read file trough shell.
@@ -133,7 +145,7 @@ class Shell(Cli):
 
         This returns bytes with content of file from path.
         """
-        self._sh.run("base64 '{}'".format(path))
+        self._sh.run(f"base64 '{path}'")
         return base64.b64decode(self._sh.output())
 
     def file_write(self, path, content):
@@ -142,11 +154,11 @@ class Shell(Cli):
         path: path to file to be written
         content: bytes to be written to it
         """
-        self._sh.sendline("base64 --decode > '{}'".format(path))
+        self._sh.sendline(f"base64 --decode > '{path}'")
         self._sh.sendline(base64.b64encode(content))
         self._sh.sendeof()
         if self._sh.prompt() != 0:
-            raise Exception("Writing file failed with exit code: {}".format(self._sh.prompt()))
+            raise Exception(f"Writing file failed with exit code: {self._sh.prompt()}")
 
     @property
     def output(self):

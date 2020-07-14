@@ -53,7 +53,7 @@ def fixture_board_root_password(request, board_serial):
     Returns configured random password
     """
     password = ''.join(random.choice(string.ascii_lowercase) for i in range(16))
-    board_serial.run("echo 'root:{}' | chpasswd".format(password))
+    board_serial.run(f"echo 'root:{password}' | chpasswd")
     request.addfinalizer(lambda: board_serial.run("passwd --delete root"))
     return password
 
@@ -62,6 +62,8 @@ def fixture_board_root_password(request, board_serial):
 def fixture_client_board(board_serial, board_root_password, lan1_client):
     """Starts client on LAN1 and connect to board using SSH.
     Provides instance of nsfarm.cli.Shell() connected to board shell using SSH trough client container.
+
+    This is prefered over serial console as kernel logs are preferably printed there and that can break CLI machinery.
     """
     # Let's have syslog on serial console as well as kernel log
     #board_serial.command('tail -f /var/log/messages')
@@ -92,7 +94,7 @@ def fixture_lan1_client(lan1):
 # Standard configuration ###############################################################################################
 
 @pytest.fixture(name="basic_isp", scope="module")
-def fixture_basic_isp(client_board, wan):
+def fixture_basic_isp(board, client_board, wan):
     """Basic config we consider general. It provides you with configured WAN.
 
     Returns handle for ISP container on WAN interface.
@@ -106,8 +108,8 @@ def fixture_basic_isp(client_board, wan):
         client_board.run("uci set network.wan.dns='1.1.1.1'")  # TODO configure to ISP
         client_board.run("uci commit network")
         client_board.run("/etc/init.d/network restart")
-        client_board.run("while ! ip route | grep -q default; do sleep 1; done")  # Wait for default route
-        # TODO this does not ensure that we ping gateway but why?
+        client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
+        time.sleep(3)  # Wait just a bit to ensure that network is up and running
         yield container
         client_board.run("uci set network.wan.proto='none'")
         client_board.run("uci delete network.wan.ipaddr")

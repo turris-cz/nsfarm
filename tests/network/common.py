@@ -22,7 +22,7 @@ class InternetTests:
 
         We send only one ICMP packet to not flood and to be quickly done with it (the success takes less than second)
         """
-        client.run("ping -c 1 '{}'".format(server))
+        client.run(f"ping -c 1 '{server}'")
 
     @pytest.mark.parametrize("server", [
         "nic.cz",
@@ -32,6 +32,6 @@ class InternetTests:
     def test_dns(self, client, server):
         """Try to resolve verious domain names.
         """
-        client.run("nslookup '{}'".format(server))
+        client.run(f"nslookup '{server}'")
 
     # TODO more excessive DNS testing

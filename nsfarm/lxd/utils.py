@@ -22,8 +22,8 @@ def clean(delta, dry_run=False):
     since = datetime.today() - delta
 
     removed = list()
-    for img in _lxd.LOCAL.images.all():
-        if next((alias for alias in img.aliases if alias["name"].startswith("nsfarm/")), None) is None:
+    for img in _lxd.local.images.all():
+        if not any(alias.startswith("nsfarm/") for alias in img.aliases):
             continue
         last_used = dateutil.parser.parse(
             # Special time "0001-01-01T00:00:00Z" means never used so use upload time instead

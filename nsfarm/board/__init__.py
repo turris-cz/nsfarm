@@ -13,5 +13,5 @@ def get_board(config):
     }
     board = config.target_config["board"]
     if board not in boards:
-        raise Exception("Unknown or unsupported board: {}".format(board))
+        raise Exception(f"Unknown or unsupported board: {board}")
     return boards[board](config.getoption("-T"), config.target_config)

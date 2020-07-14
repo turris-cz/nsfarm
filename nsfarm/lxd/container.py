@@ -28,10 +28,10 @@ class Container:
         self._devices = tuple(devices)
         self._dir_path = os.path.join(IMGS_DIR, img_name)
         self._file_path = self._dir_path + ".sh"
-        self._logger = logging.getLogger("{}[{}]".format(__package__, img_name))
+        self._logger = logging.getLogger(f"{__package__}[{img_name}]")
         # Verify existence of image definition
         if not os.path.isfile(self._file_path):
-            raise Exception("There seems to be no file describing image: {}".format(self._file_path))
+            raise Exception(f"There seems to be no file describing image: {self._file_path}")
         if not os.path.isdir(self._dir_path):
             self._dir_path = None
         # Make sure that we are connected to LXD
@@ -46,10 +46,10 @@ class Container:
         elif parent.startswith("images:"):
             self._parent = _lxd.images.images.get_by_alias(parent[7:])
         else:
-            raise Exception("The file has parent from unknown source: {}: {}".format(parent, self.fpath))
+            raise Exception(f"The file has parent from unknown source: {parent}: {self.fpath}")
         # Calculate identity hash and generate image name
         self._hash = self.__identity_hash()
-        self._image_alias = "nsfarm/{}/{}".format(self._name, self._hash)
+        self._image_alias = f"nsfarm/{self._name}/{self._hash}"
         # Some empty handles
         self._lxd_image = None
         self._lxd_container = None
@@ -107,7 +107,7 @@ class Container:
             image_source["mode"] = "pull"
             image_source["server"] = _lxd.IMAGES_SOURCE
             image_source["alias"] = self._parent.fingerprint
-        container_name = "nsfarm-bootstrap-{}-{}".format(self._name, self._hash)
+        container_name = f"nsfarm-bootstrap-{self._name}-{self._hash}"
         try:
             container = _lxd.local.containers.create({
                 'name': container_name,
@@ -137,13 +137,13 @@ class Container:
                 res = container.execute([IMAGE_INIT_PATH])
                 if res.exit_code != 0:
                     # TODO more appropriate exception and possibly use stderr and stdout
-                    raise Exception("Image initialization failed: {}".format(res))
+                    raise Exception(f"Image initialization failed: {res}")
                 container.files.delete(IMAGE_INIT_PATH)  # Remove init script
             finally:
                 container.stop(wait=True)
             # Create and configure image
             self._lxd_image = container.publish(wait=True)
-            self._lxd_image.add_alias(self._image_alias, "NSFarm image: {}".format(self._name))
+            self._lxd_image.add_alias(self._image_alias, f"NSFarm image: {self._name}")
         finally:
             container.delete()
 
@@ -178,12 +178,12 @@ class Container:
         # container.
 
     def _container_name(self, prefix="nsfarm"):
-        name = "{}-{}-{}".format(prefix, self._name, os.getpid())
+        name = f"{prefix}-{self._name}-{os.getpid()}"
         if _lxd.local.containers.exists(name):
             i = 1
-            while _lxd.local.containers.exists("{}-{}".format(name, i)):
+            while _lxd.local.containers.exists(f"{name}-{i}"):
                 i += 1
-            name = "{}-{}".format(name, i)
+            name = f"{name}-{i}"
         return name
 
     def cleanup(self):

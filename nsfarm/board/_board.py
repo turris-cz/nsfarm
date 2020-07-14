@@ -25,8 +25,10 @@ class Board:
         self.config = target_config
         # Open serial console to board
         self._serial = serial.Serial(self.config['serial'], 115200)
+        #self._fdlogging = cli.FDLogging(self._serial, logging.getLogger(f"{__package__}[{target}]"))
+        #self._pexpect = fdpexpect.fdspawn(self._fdlogging.socket())
         self._pexpect = fdpexpect.fdspawn(self._serial)
-        self._pexpect.logfile_read = cli.PexpectLogging(logging.getLogger('{}[{}]'.format(__package__, target)))
+        self._pexpect.logfile_read = cli.PexpectLogging(logging.getLogger(f"{__package__}[{target}]"))
         # Set board to some known state
         self.reset(True)  # Hold in reset state
 
@@ -101,12 +103,13 @@ class Board:
         miniterm.set_rx_encoding(MINITERM_ENCODING)
         miniterm.set_tx_encoding(MINITERM_ENCODING)
 
+        key_quit = serial.tools.miniterm.key_description(miniterm.exit_character)
+        key_menu = serial.tools.miniterm.key_description(miniterm.menu_character)
+        key_help = serial.tools.miniterm.key_description('\x08')
+
         sys.stderr.write('\n')
-        sys.stderr.write('--- Miniterm on {p.name} ---\n'.format(p=miniterm.serial))
-        sys.stderr.write('--- Quit: {0} | Menu: {1} | Help: {1} followed by {2} ---\n'.format(
-            serial.tools.miniterm.key_description(miniterm.exit_character),
-            serial.tools.miniterm.key_description(miniterm.menu_character),
-            serial.tools.miniterm.key_description('\x08')))
+        sys.stderr.write(f"--- Miniterm on {miniterm.serial.name} ---\n")
+        sys.stderr.write(f"--- Quit: {key_quit} | Menu: {key_menu} | Help: {key_help} followed by {key_menu} ---\n")
 
         miniterm.start()
         miniterm.join()
