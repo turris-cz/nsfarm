@@ -1,10 +1,51 @@
+import pytest
+import os
 import time
 import random
 import string
-import pytest
+import configparser
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "-T", "--target",
+        required=True,
+        help="Run tests on target BOARD.",
+        metavar="BOARD",
+    )
+    parser.addoption(
+        "-C", "--targets-config",
+        help="Path to configuration file with additional targets.",
+        metavar="PATH",
+    )
+
+
+def pytest_configure(config):
+    # TODO handle targets in nsfarm library for central management
+    # Parse target configuration
+    targets = configparser.ConfigParser()
+    targets.read(os.path.expanduser("~/.nsfarm_targets.ini"))
+    targets.read(os.path.join(config.rootdir, "targets.ini"))
+    targets.read(config.getoption("-C") or ())
+    # Set target configuration
+    target = config.getoption("-T")
+    if target is not None:  # None happes for example with --help argument
+        if target not in targets:
+            raise Exception(f"No configuration for target: {target}")
+        setattr(config, "target_config", targets[target])
+
+
+def pytest_runtest_setup(item):
+    board = item.config.target_config["board"]
+    for boards in item.iter_markers(name="board"):
+        if board not in boards.args:
+            pytest.skip(f"test is not compatible with target: {board}")
+    for conn in ("serial", "wan", "lan1", "lan2"):
+        if item.get_closest_marker(conn) is not None and conn not in item.config.target_config:
+            pytest.skip(f"test requires connection: {conn}")
 
 
 ########################################################################################################################
@@ -66,6 +107,7 @@ def fixture_client_board(board_serial, board_root_password, lan1_client):
     This is prefered over serial console as kernel logs are preferably printed there and that can break CLI machinery.
     """
     # Let's have syslog on serial console as well as kernel log
+    # TODO this fails as there is no /var/log/messages immediatelly after bootup for some reason
     #board_serial.command('tail -f /var/log/messages')
     # Now spawn client container and connect
     nsfarm.cli.Shell(lan1_client.pexpect()).run('wait4network')
