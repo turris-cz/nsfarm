@@ -1,8 +1,9 @@
 """Devices management and assigment to containers.
 """
+import abc
 
 
-class Device:
+class Device(abc.ABC):
     """Generic device handler for LXD container.
 
     This is device handler that can be assigned to containers. Note that it can be assigned to only one container at the
@@ -34,11 +35,11 @@ class Device:
             self._assignment[-2].unfreeze()
         self._assignment.remove(container)
 
+    @abc.abstractmethod
     def _definition(self):
         """This method has to be implemented by child class and should return definition of device that is later
         provided to caller as result of calling acquire().
         """
-        raise NotImplementedError
 
     @property
     def container(self):

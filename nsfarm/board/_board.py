@@ -1,6 +1,7 @@
 """This defines generic board and its helpers.
 """
 import sys
+import abc
 import time
 import logging
 import serial
@@ -14,7 +15,7 @@ MINITERM_DEFAULT_MENU = '\x14'  # Ctrl+T
 MINITERM_ENCODING = sys.getdefaultencoding()
 
 
-class Board:
+class Board(abc.ABC):
     """General abstract class defining handle for board.
     """
 
@@ -62,10 +63,11 @@ class Board:
         self._pexpect.sendline("")
         return cli.Uboot(self._pexpect)
 
-    def bootup(self, device_wan):
+    def bootup(self, device_wan, os_branch):
         """Boot board using TFTP boot. This ensures that board is booted up and ready to accept commands.
 
         device_wan: Wan device to board. This is instance of nsfarm.lxd.NetInterface.
+        os_branch: Turris OS branch to download medkit from.
 
         Returns instance of cli.Shell
         """
@@ -74,7 +76,7 @@ class Board:
         # Now load image from TFTP
         with Container("boot", devices=[device_wan, ]) as cont:
             ccli = cli.Shell(cont.pexpect())
-            ccli.run("prepare_turris_image")
+            ccli.run(f"prepare_turris_image {os_branch}")
             uboot.run('setenv ipaddr 192.168.1.142')
             uboot.run('setenv serverip 192.168.1.1')
             self._board_bootup(uboot)
@@ -85,12 +87,12 @@ class Board:
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
         return shell
 
+    @abc.abstractmethod
     def _board_bootup(self, uboot):
         """Board specific bootup routine.
 
         It has to implement TFTP uboot routines.
         """
-        raise NotImplementedError
 
     def serial_miniterm(self):
         """Runs interactive miniterm on serial TTY interface.
@@ -116,26 +118,25 @@ class Board:
 
         sys.stderr.write("\n--- Miniterm exit ---\n")
 
-    @property
+    @abc.abstractproperty
     def wan(self):
         """Network interface name for WAN interface in router
         """
-        raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def lan1(self):
         """Network interface name for LAN1 interface in router
+        Note that this not matches lan1 port on router but rather is primary lan port.
         """
-        raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def lan2(self):
         """Network interface name for LAN2 interface in router
+        Note that this not matches lan2 port on router but rather is secondary test port (such as different switch).
         """
-        raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def lan3(self):
         """Network interface name for LAN3 interface in router
+        Note that this not matches lan3 port on router but rather is tercial test port (such as different switch).
         """
-        raise NotImplementedError

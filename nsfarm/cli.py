@@ -8,6 +8,7 @@ support for shell and u-boot.  They differ in a way how they handle prompt and m
 # There are new line character matches in regular expressions. Correct one is \r\n but some serial controlles for some
 # reason also use \n\r so we match both alternatives.
 #
+import abc
 import logging
 import base64
 
@@ -31,7 +32,7 @@ def run_exit_code_zero(exit_code):
     return 0
 
 
-class Cli:
+class Cli(abc.ABC):
     """This is generic abstraction on top of pexpect for command line interface.
     """
 
@@ -44,20 +45,19 @@ class Cli:
         # Just propagate anything we do not implement to pexect handle
         return getattr(self._pe, name)
 
+    @abc.abstractmethod
     def prompt(self, **kwargs):
         """Follow output until prompt is reached and parse it.  Exit code is returned.
         All keyword arguments are passed to pexpect's expect call.
         """
-        raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def output(self):
         """All output before latest prompt.
 
         This is everything not matched till prompt is located.  Note that this is for some implementations same as
         pexpect before but in others it can differ so you should always use this property instead of before.
         """
-        raise NotImplementedError
 
     def command(self, cmd=""):
         """Calls pexpect sendline and expect cmd with trailing new line.

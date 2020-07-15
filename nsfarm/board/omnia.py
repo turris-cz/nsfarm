@@ -25,3 +25,7 @@ class Omnia(Board):
     @property
     def lan2(self):
         return "lan3"
+
+    @property
+    def lan3(self):
+        return "lan4"
