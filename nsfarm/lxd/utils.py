@@ -4,8 +4,8 @@ import os
 import logging
 from datetime import datetime
 import dateutil.parser
-from . import container
-from . import _lxd
+from .connection import LXDConnection
+from .container import Container, IMGS_DIR
 
 logger = logging.getLogger(__package__)
 
@@ -18,11 +18,11 @@ def clean(delta, dry_run=False):
 
     Returns list of (to be) removed images.
     """
-    _lxd.connect()
+    connection = LXDConnection()
     since = datetime.today() - delta
 
     removed = list()
-    for img in _lxd.local.images.all():
+    for img in connection.local.images.all():
         if not any(alias.startswith("nsfarm/") for alias in img.aliases):
             continue
         last_used = dateutil.parser.parse(
@@ -42,7 +42,7 @@ def all_images():
 
     This collects all *.sh files in imgs directory in root of nsfarm project.
     """
-    return (imgf[:-3] for imgf in os.listdir(container.IMGS_DIR) if imgf.endswith(".sh"))
+    return (imgf[:-3] for imgf in os.listdir(IMGS_DIR) if imgf.endswith(".sh"))
 
 
 def bootstrap(imgs=None):
@@ -53,11 +53,8 @@ def bootstrap(imgs=None):
     Returns True if all images were bootstrapped correctly.
     """
     success = True
+    connection = LXDConnection()
     for img in all_images() if imgs is None else imgs:
         logger.info("Trying to bootstrap: %s", img)
-        try:
-            container.Container(img).prepare_image()
-        except Exception:
-            success = False
-            logger.exception("Bootstrap failed for: %s", img)
+        Container(connection, img).prepare_image()
     return success

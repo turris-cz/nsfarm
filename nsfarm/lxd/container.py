@@ -2,6 +2,7 @@
 """
 import os
 import time
+import typing
 import itertools
 import pathlib
 import hashlib
@@ -9,7 +10,8 @@ import logging
 import pexpect
 import pylxd
 from .. import cli
-from . import _lxd
+from .connection import LXDConnection
+from .device import NetInterface
 
 IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
 
@@ -23,7 +25,9 @@ class Container:
     """
     # TODO log syslog somehow
 
-    def __init__(self, img_name, devices=(), internet=True):
+    def __init__(self, lxd_connection: LXDConnection, img_name: str, devices: typing.List[NetInterface] = (),
+                 internet: bool = True):
+        self._lxd = lxd_connection
         self._name = img_name
         self._internet = internet
         self._devices = tuple(devices)
@@ -35,17 +39,15 @@ class Container:
             raise Exception(f"There seems to be no file describing image: {self._file_path}")
         if not self._dir_path.is_dir():
             self._dir_path = None
-        # Make sure that we are connected to LXD
-        _lxd.connect()
         # Get parent
         with open(self._file_path) as file:
             # This reads second line of file while initial hash removed
             parent = next(itertools.islice(file, 1, 2))[1:].strip()
         self._parent = None
         if parent.startswith("nsfarm:"):
-            self._parent = Container(parent[7:])
+            self._parent = Container(lxd_connection, parent[7:])
         elif parent.startswith("images:"):
-            self._parent = _lxd.images.images.get_by_alias(parent[7:])
+            self._parent = self._lxd.images.images.get_by_alias(parent[7:])
         else:
             raise Exception(f"The file has parent from unknown source: {parent}: {self.fpath}")
         # Calculate identity hash and generate image name
@@ -91,8 +93,8 @@ class Container:
         """
         if self._lxd_image:
             return
-        if _lxd.local.images.exists(self._image_alias, alias=True):
-            self._lxd_image = _lxd.local.images.get_by_alias(self._image_alias)
+        if self._lxd.local.images.exists(self._image_alias, alias=True):
+            self._lxd_image = self._lxd.local.images.get_by_alias(self._image_alias)
             return
         # We do not have appropriate image so prepare it
         logger.warning("Bootstrapping image: %s", self._image_alias)
@@ -106,11 +108,11 @@ class Container:
         else:
             # We have to pull it from images
             image_source["mode"] = "pull"
-            image_source["server"] = _lxd.IMAGES_SOURCE
+            image_source["server"] = self._lxd.IMAGES_SOURCE
             image_source["alias"] = self._parent.fingerprint
         container_name = f"nsfarm-bootstrap-{self._name}-{self._hash}"
         try:
-            container = _lxd.local.containers.create({
+            container = self._lxd.local.containers.create({
                 'name': container_name,
                 'profiles': ['nsfarm-root', 'nsfarm-internet'],
                 'source': image_source
@@ -121,7 +123,7 @@ class Container:
                 raise
             logger.warning("Other instance is already bootsrapping image probably. "
                             "Waiting for following container to go away: %s", container_name)
-            while _lxd.local.containers.exists(container_name):
+            while self._lxd.local.containers.exists(container_name):
                 time.sleep(1)
             self.prepare_image()  # possibly get created image or try again
             return
@@ -163,7 +165,7 @@ class Container:
         for device in self._devices:
             devices.update(device.acquire(self))
         # Create and start container
-        self._lxd_container = _lxd.local.containers.create({
+        self._lxd_container = self._lxd.local.containers.create({
             'name': self._container_name(),
             'ephemeral': True,
             'profiles': profiles,
@@ -180,9 +182,9 @@ class Container:
 
     def _container_name(self, prefix="nsfarm"):
         name = f"{prefix}-{self._name}-{os.getpid()}"
-        if _lxd.local.containers.exists(name):
+        if self._lxd.local.containers.exists(name):
             i = 1
-            while _lxd.local.containers.exists(f"{name}-{i}"):
+            while self._lxd.local.containers.exists(f"{name}-{i}"):
                 i += 1
             name = f"{name}-{i}"
         return name

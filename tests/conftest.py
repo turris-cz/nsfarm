@@ -70,6 +70,14 @@ def fixture_board(request):
     return brd
 
 
+# TODO probably mark this with some LXD available/configured mark
+@pytest.fixture(scope="session", name="lxd")
+def fixture_lxd(request):
+    """Provides access to nsfarm.lxd.LXDConnection instance.
+    """
+    return nsfarm.lxd.LXDConnection()
+
+
 @pytest.fixture(scope="session", name="wan", params=[pytest.param(None, marks=pytest.mark.wan)])
 def fixture_wan(request):
     """Top level fixture used to share WAN interface handler.
@@ -88,12 +96,12 @@ def fixture_lan1(request):
 # Boot and setup fixtures ##############################################################################################
 
 @pytest.fixture(name="board_serial", scope="session")
-def fixture_board_serial(request, board, wan):
+def fixture_board_serial(request, lxd, board, wan):
     """Boot board to Shell.
     Provides instance of nsfarm.cli.Shell()
     """
     request.addfinalizer(lambda: board.reset(True))
-    return board.bootup(wan, request.config.target_branch)
+    return board.bootup(lxd, wan, request.config.target_branch)
 
 
 @pytest.fixture(name="board_root_password", scope="session")
@@ -133,10 +141,10 @@ def fixture_client_board(board_serial, board_root_password, lan1_client):
 # Common containers ####################################################################################################
 
 @pytest.fixture(name="lan1_client", scope="module")
-def fixture_lan1_client(lan1):
+def fixture_lan1_client(lxd, lan1):
     """Starts client container on LAN1 and provides it.
     """
-    with nsfarm.lxd.Container('client', devices=[lan1, ], internet=False) as container:
+    with nsfarm.lxd.Container(lxd, 'client', devices=[lan1, ], internet=False) as container:
         yield container
 
 
@@ -144,13 +152,13 @@ def fixture_lan1_client(lan1):
 # Standard configuration ###############################################################################################
 
 @pytest.fixture(name="basic_isp", scope="module")
-def fixture_basic_isp(board, client_board, wan):
+def fixture_basic_isp(lxd, board, client_board, wan):
     """Basic config we consider general. It provides you with configured WAN.
 
     Returns handle for ISP container on WAN interface.
     """
     # TODO what about other settings that are part of guide
-    with nsfarm.lxd.Container('isp-common', devices=[wan, ]) as container:
+    with nsfarm.lxd.Container(lxd, 'isp-common', devices=[wan, ]) as container:
         client_board.run("uci set network.wan.proto='static'")
         client_board.run("uci set network.wan.ipaddr='172.16.1.42'")
         client_board.run("uci set network.wan.netmask='255.240.0.0'")
