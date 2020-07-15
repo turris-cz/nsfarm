@@ -5,7 +5,8 @@ import logging
 from datetime import datetime
 import dateutil.parser
 from .connection import LXDConnection
-from .container import Container, IMGS_DIR
+from .container import Container
+from .image import Image
 
 logger = logging.getLogger(__package__)
 
@@ -42,7 +43,7 @@ def all_images():
 
     This collects all *.sh files in imgs directory in root of nsfarm project.
     """
-    return (imgf[:-3] for imgf in os.listdir(IMGS_DIR) if imgf.endswith(".sh"))
+    return (imgf[:-3] for imgf in os.listdir(Image.IMGS_DIR) if imgf.endswith(".sh"))
 
 
 def bootstrap(imgs=None):
@@ -56,5 +57,5 @@ def bootstrap(imgs=None):
     connection = LXDConnection()
     for img in all_images() if imgs is None else imgs:
         logger.info("Trying to bootstrap: %s", img)
-        Container(connection, img).prepare_image()
+        Image(connection, img).prepare()
     return success
