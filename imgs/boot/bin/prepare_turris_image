@@ -2,15 +2,11 @@
 set -e
 TFTP_ROOT="/var/tftpboot"
 
-# TODO use this
-BOARD="$1"
-MODE="$2"
-TARGET="$3"
-# TODO
+branch="${1:-hbk}"
 
 # Get appropriate medkit
 wait4network
-wget "https://repo.turris.cz/hbk/medkit/omnia-medkit-latest.tar.gz" -O medkit.tar.gz
+wget "https://repo.turris.cz/$branch/medkit/omnia-medkit-latest.tar.gz" -O medkit.tar.gz
 
 # Repack as CPIO
 mkdir root

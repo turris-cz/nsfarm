@@ -1,9 +1,9 @@
-import pytest
 import os
 import time
 import random
 import string
 import configparser
+import pytest
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
@@ -21,6 +21,12 @@ def pytest_addoption(parser):
         help="Path to configuration file with additional targets.",
         metavar="PATH",
     )
+    parser.addoption(
+        "-B", "--branch",
+        default="hbk",
+        help="Run tests for specified Turris OS BRANCH.",
+        metavar="BRANCH",
+    )
 
 
 def pytest_configure(config):
@@ -36,6 +42,8 @@ def pytest_configure(config):
         if target not in targets:
             raise Exception(f"No configuration for target: {target}")
         setattr(config, "target_config", targets[target])
+    # Set target branch
+    setattr(config, "target_branch", config.getoption("-B"))
 
 
 def pytest_runtest_setup(item):
@@ -85,7 +93,7 @@ def fixture_board_serial(request, board, wan):
     Provides instance of nsfarm.cli.Shell()
     """
     request.addfinalizer(lambda: board.reset(True))
-    return board.bootup(wan)
+    return board.bootup(wan, request.config.target_branch)
 
 
 @pytest.fixture(name="board_root_password", scope="session")
