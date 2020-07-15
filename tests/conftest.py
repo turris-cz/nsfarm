@@ -1,7 +1,7 @@
-import os
 import time
 import random
 import string
+import pathlib
 import configparser
 import pytest
 import nsfarm.board
@@ -33,8 +33,8 @@ def pytest_configure(config):
     # TODO handle targets in nsfarm library for central management
     # Parse target configuration
     targets = configparser.ConfigParser()
-    targets.read(os.path.expanduser("~/.nsfarm_targets.ini"))
-    targets.read(os.path.join(config.rootdir, "targets.ini"))
+    targets.read(pathlib.Path("~/.nsfarm_targets.ini").expanduser())
+    targets.read(pathlib.PurePath(config.rootdir).joinpath("targets.ini"))
     targets.read(config.getoption("-C") or ())
     # Set target configuration
     target = config.getoption("-T")

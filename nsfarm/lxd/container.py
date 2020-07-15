@@ -3,6 +3,7 @@
 import os
 import time
 import itertools
+import pathlib
 import hashlib
 import logging
 import pexpect
@@ -12,7 +13,7 @@ from . import _lxd
 
 IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
 
-IMGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "imgs")
+IMGS_DIR = pathlib.Path(__file__).parents[2] / "imgs"
 
 logger = logging.getLogger(__package__)
 
@@ -26,13 +27,13 @@ class Container:
         self._name = img_name
         self._internet = internet
         self._devices = tuple(devices)
-        self._dir_path = os.path.join(IMGS_DIR, img_name)
-        self._file_path = self._dir_path + ".sh"
+        self._dir_path = IMGS_DIR / img_name
+        self._file_path = self._dir_path.with_suffix(self._dir_path.suffix + ".sh")
         self._logger = logging.getLogger(f"{__package__}[{img_name}]")
         # Verify existence of image definition
-        if not os.path.isfile(self._file_path):
+        if not self._file_path.is_file():
             raise Exception(f"There seems to be no file describing image: {self._file_path}")
-        if not os.path.isdir(self._dir_path):
+        if not self._dir_path.is_dir():
             self._dir_path = None
         # Make sure that we are connected to LXD
         _lxd.connect()
@@ -66,20 +67,20 @@ class Container:
             md5sum.update(file.read())
         # Additional nodes from directory
         if self._dir_path:
-            nodes = os.listdir(self._dir_path)
+            nodes = [path for path in self._dir_path.iterdir() if path.is_dir()]
             while nodes:
                 node = nodes.pop()
-                path = os.path.join(self._dir_path, node)
-                md5sum.update(node.encode())
-                if os.path.isdir(path):
-                    nodes += [os.path.join(node, nd) for nd in os.listdir(path)]
-                elif os.path.isfile(path):
+                path = self._dir_path / node
+                md5sum.update(str(node).encode())
+                if path.is_dir():
+                    nodes += [path for path in node.iterdir() if path.is_dir()]
+                elif path.is_file():
                     # For plain file include content
                     with open(path, "rb") as file:
                         md5sum.update(file.read())
-                elif os.path.islink(path):
+                elif path.is_link():
                     # For link include its target as well
-                    md5sum.update(os.readlink(path).encode())
+                    md5sum.update(str(path.resolve()).encode())
         return md5sum.hexdigest()
 
     def prepare_image(self):
