@@ -2,11 +2,6 @@ import pytest
 from nsfarm import lxd
 
 
-@pytest.fixture(name="connection", scope="module")
-def fixture_connection():
-    return lxd.LXDConnection()
-
-
 @pytest.mark.parametrize("profile", [
     lxd.LXDConnection.ROOT_PROFILE,
     lxd.LXDConnection.INTERNET_PROFILE,

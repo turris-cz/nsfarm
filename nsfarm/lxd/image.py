@@ -8,6 +8,7 @@ import hashlib
 import logging
 import pylxd
 from .connection import LXDConnection
+from .exceptions import LXDImageUndefined, LXDImageUnknowParent
 
 logger = logging.getLogger(__package__)
 
@@ -28,8 +29,7 @@ class Image:
 
         # Verify existence of image definition
         if not self._file_path.is_file():
-            # TODO better exception object
-            raise Exception(f"There seems to be no file describing image: {self._file_path}")
+            raise LXDImageUndefined(self.name, self._file_path)
         if not self._dir_path.is_dir():
             self._dir_path = None
 
@@ -43,8 +43,7 @@ class Image:
         elif parent.startswith("images:"):
             self._parent = self._lxd.images.images.get_by_alias(parent[7:])
         else:
-            # TODO better exception object
-            raise Exception(f"The file has parent from unknown source: {parent}: {self._file_path}")
+            raise LXDImageUnknowParent(self.name, parent)
 
     @functools.lru_cache(maxsize=1)
     def hash(self) -> str:
