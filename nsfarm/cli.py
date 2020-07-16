@@ -8,9 +8,14 @@ support for shell and u-boot.  They differ in a way how they handle prompt and m
 # There are new line character matches in regular expressions. Correct one is \r\n but some serial controlles for some
 # reason also use \n\r so we match both alternatives.
 #
+import os
+import io
 import abc
 import logging
 import base64
+import fcntl
+import socket
+import threading
 import typing
 
 _FLUSH_BUFFLEN = 2048
@@ -52,7 +57,8 @@ class Cli(abc.ABC):
         All keyword arguments are passed to pexpect's expect call.
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def output(self):
         """All output before latest prompt.
 
@@ -190,6 +196,90 @@ class Uboot(Cli):
         return self._output
 
 
+class FDLogging:
+    """Live logging with data passtrough.
+
+    This is stream logging that logs communication comming from and to file descript trough socket. This intended use is
+    for direct output to be visible live in logs.
+
+    This has one primary limitation and that is output only in lines. Log is created only when new line character is
+    located not before that.
+    """
+    _EXPECTED_EOL = b'\n\r'
+
+    def __init__(self, fd, logger, in_level=logging.INFO, out_level=logging.DEBUG):
+        self.logger = logger
+        self.in_level = in_level
+        self.out_level = out_level
+        self.fileno = fd.fileno()
+        self.our_sock, self.user_sock = socket.socketpair()
+
+        # Input
+        self.inputthread = threading.Thread(target=self._input, daemon=True)
+        self.inputthread.start()
+        # Output
+        self.outputthread = threading.Thread(target=self._output, daemon=True)
+        self.outputthread.start()
+
+    def socket(self):
+        """Returns socket for user to use to communicate trough this logged passtrough.
+        """
+        return self.user_sock
+
+    def close(self):
+        """Close socket and stop logging.
+        """
+        if self.our_sock is not None:
+            # Terminates and cleans _input
+            _orig_filestatus = fcntl.fcntl(self.fileno, fcntl.F_GETFL)
+            fcntl.fcntl(self.fileno, fcntl.F_SETFL, _orig_filestatus | os.O_NONBLOCK)
+            self.inputthread.join()
+            fcntl.fcntl(self.fileno, fcntl.F_SETFL, _orig_filestatus)
+            # Terminates and cleans _output
+            self.our_sock.close()
+            self.outputthread.join()
+            self.our_sock = None
+
+    def __del__(self):
+        self.close()
+
+    def _log_line(self, line, level):
+        self.logger.log(level, repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
+
+    def _log(self, prev_data, new_data, level):
+        data = prev_data + new_data
+        lines = data.splitlines(keepends=True)
+        if not lines:
+            return
+        # The last line does not have to be terminated (no new line character) so just preserve it
+        reminder = lines.pop() if lines[-1] or lines[-1][-1] not in self._EXPECTED_EOL else b''
+        for line in lines:
+            self._log_line(line, level)
+        return reminder
+
+    def _input(self):
+        data = b''
+        while True:
+            try:
+                new_data = os.read(self.fileno, io.DEFAULT_BUFFER_SIZE)
+            except io.BlockingIOError:
+                self._log_line(data, self.in_level)
+                return
+            self.our_sock.sendall(new_data)
+            data = self._log(data, new_data, self.in_level)
+
+    def _output(self):
+        data = b''
+        while True:
+            try:
+                new_data = self.our_sock.recv(io.DEFAULT_BUFFER_SIZE)
+            except io.BlockingIOError:
+                self._log_line(data, self.out_level)
+                return
+            os.write(self.fileno, new_data)
+            data = self._log(data, new_data, self.out_level)
+
+
 class PexpectLogging:
     """Logging for pexpect.
 
@@ -198,7 +288,7 @@ class PexpectLogging:
     _EXPECTED_EOL = b'\n\r'
 
     def __init__(self, logger):
-        self._level = logging.INFO
+        self._level = logging.DEBUG
         self.logger = logger
         self.linebuf = b''
 
