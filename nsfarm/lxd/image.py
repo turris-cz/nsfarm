@@ -1,5 +1,6 @@
 """Images management.
 """
+import io
 import time
 import itertools
 import functools
@@ -58,8 +59,7 @@ class Image:
         else:
             md5sum.update(self._parent.fingerprint.encode())
         # File defining container
-        with open(self._file_path, "rb") as file:
-            md5sum.update(file.read())
+        self._md5sum_update_file(md5sum, self._file_path)
         # Additional nodes from directory
         if self._dir_path:
             nodes = [path for path in self._dir_path.iterdir() if path.is_dir()]
@@ -71,12 +71,21 @@ class Image:
                     nodes += [path for path in node.iterdir() if path.is_dir()]
                 elif path.is_file():
                     # For plain file include content
-                    with open(path, "rb") as file:
-                        md5sum.update(file.read())
+                    self._md5sum_update_file(md5sum, path)
                 elif path.is_link():
                     # For link include its target as well
                     md5sum.update(str(path.resolve()).encode())
         return md5sum.hexdigest()
+
+    @staticmethod
+    def _md5sum_update_file(md5sum, file_path):
+        with open(file_path, "rb") as file:
+            # IMPROVE: with Python 3.8 this can we rewritten with := syntax
+            while True:
+                data = file.read(io.DEFAULT_BUFFER_SIZE)
+                if not data:
+                    break
+                md5sum.update(data)
 
     def alias(self, img_hash: str = None) -> str:
         """Alias for latest image. This is name used to identify image in LXD.
