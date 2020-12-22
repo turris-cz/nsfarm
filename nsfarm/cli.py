@@ -11,6 +11,7 @@ support for shell and u-boot.  They differ in a way how they handle prompt and m
 import abc
 import logging
 import base64
+import typing
 
 _FLUSH_BUFFLEN = 2048
 
