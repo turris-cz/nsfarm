@@ -21,8 +21,7 @@ awall activate --force
 ## Additonal service
 # iperf3 for benchmarking tests
 apk add iperf3 iperf3-openrc
-sed -i 's/iperf/iperf3/' /etc/init.d/iperf # Fix invalid service name
-rc-update add iperf default
+rc-update add iperf3 default
 
 ## Configure WAN interface of router
 cat >> /etc/network/interfaces <<EOF
