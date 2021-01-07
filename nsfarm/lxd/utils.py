@@ -24,7 +24,7 @@ def clean(delta, dry_run=False):
 
     removed = list()
     for img in connection.local.images.all():
-        if not any(alias.startswith("nsfarm/") for alias in img.aliases):
+        if not any(alias["name"].startswith("nsfarm/") for alias in img.aliases):
             continue
         last_used = dateutil.parser.parse(
             # Special time "0001-01-01T00:00:00Z" means never used so use upload time instead
