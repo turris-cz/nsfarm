@@ -14,6 +14,7 @@ import abc
 import logging
 import base64
 import fcntl
+import select
 import socket
 import threading
 import typing
@@ -207,77 +208,78 @@ class FDLogging:
     """
     _EXPECTED_EOL = b'\n\r'
 
-    def __init__(self, fd, logger, in_level=logging.INFO, out_level=logging.DEBUG):
-        self.logger = logger
-        self.in_level = in_level
-        self.out_level = out_level
-        self.fileno = fd.fileno()
-        self.our_sock, self.user_sock = socket.socketpair()
+    def __init__(self, fileno, logger, in_level=logging.INFO, out_level=logging.DEBUG):
+        self._logger = logger
+        self._in_level = in_level
+        self._out_level = out_level
+        self._fileno = fileno if isinstance(fileno, int) else fileno.fileno()
+        self._our_sock, self._user_sock = socket.socketpair()
 
-        # Input
-        self.inputthread = threading.Thread(target=self._input, daemon=True)
-        self.inputthread.start()
-        # Output
-        self.outputthread = threading.Thread(target=self._output, daemon=True)
-        self.outputthread.start()
+        self._orig_filestatus = fcntl.fcntl(self._fileno, fcntl.F_GETFL)
+        fcntl.fcntl(self._fileno, fcntl.F_SETFL, self._orig_filestatus | os.O_NONBLOCK)
+        self._our_sock.setblocking(False)
 
+        self._thread = threading.Thread(target=self._thread_func, daemon=True)
+        self._thread.start()
+
+    @property
     def socket(self):
         """Returns socket for user to use to communicate trough this logged passtrough.
         """
-        return self.user_sock
+        return self._user_sock
 
     def close(self):
         """Close socket and stop logging.
         """
-        if self.our_sock is not None:
-            # Terminates and cleans _input
-            _orig_filestatus = fcntl.fcntl(self.fileno, fcntl.F_GETFL)
-            fcntl.fcntl(self.fileno, fcntl.F_SETFL, _orig_filestatus | os.O_NONBLOCK)
-            self.inputthread.join()
-            fcntl.fcntl(self.fileno, fcntl.F_SETFL, _orig_filestatus)
-            # Terminates and cleans _output
-            self.our_sock.close()
-            self.outputthread.join()
-            self.our_sock = None
+        if self._our_sock is None:
+            return
+        self._our_sock.close()
+        self._our_sock = None
+        self._thread.join()
+        fcntl.fcntl(self._fileno, fcntl.F_SETFL, self._orig_filestatus)
 
     def __del__(self):
         self.close()
 
     def _log_line(self, line, level):
-        self.logger.log(level, repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
+        self._logger.log(level, repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
 
     def _log(self, prev_data, new_data, level):
         data = prev_data + new_data
         lines = data.splitlines(keepends=True)
         if not lines:
-            return
+            return data
         # The last line does not have to be terminated (no new line character) so just preserve it
-        reminder = lines.pop() if lines[-1] or lines[-1][-1] not in self._EXPECTED_EOL else b''
+        reminder = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b''
         for line in lines:
             self._log_line(line, level)
         return reminder
 
-    def _input(self):
-        data = b''
-        while True:
-            try:
-                new_data = os.read(self.fileno, io.DEFAULT_BUFFER_SIZE)
-            except io.BlockingIOError:
-                self._log_line(data, self.in_level)
-                return
-            self.our_sock.sendall(new_data)
-            data = self._log(data, new_data, self.in_level)
+    def _thread_func(self):
+        data = {
+            self._fileno: b'',
+            self._our_sock.fileno(): b'',
+        }
+        level = {
+            self._fileno: self._in_level,
+            self._our_sock.fileno(): self._out_level,
+        }
+        output = {
+            self._fileno: self._our_sock.fileno(),
+            self._our_sock.fileno(): self._fileno,
+        }
 
-    def _output(self):
-        data = b''
+        poll = select.poll()
+        poll.register(self._fileno, select.POLLIN)
+        poll.register(self._our_sock.fileno(), select.POLLIN | select.POLLNVAL)
         while True:
-            try:
-                new_data = self.our_sock.recv(io.DEFAULT_BUFFER_SIZE)
-            except io.BlockingIOError:
-                self._log_line(data, self.out_level)
-                return
-            os.write(self.fileno, new_data)
-            data = self._log(data, new_data, self.out_level)
+            for poll_event in poll.poll():
+                fileno, event = poll_event
+                if event == select.POLLNVAL:
+                    return
+                new_data = os.read(fileno, io.DEFAULT_BUFFER_SIZE)
+                os.write(output[fileno], new_data)
+                data[fileno] = self._log(data[fileno], new_data, level[fileno])
 
 
 class PexpectLogging:
@@ -288,7 +290,7 @@ class PexpectLogging:
     _EXPECTED_EOL = b'\n\r'
 
     def __init__(self, logger):
-        self._level = logging.DEBUG
+        self._level = logging.INFO
         self.logger = logger
         self.linebuf = b''
 
