@@ -3,7 +3,7 @@ import argparse
 import subprocess
 import dateutil.relativedelta
 from . import utils
-from . import Container
+from . import Container, LXDConnection
 
 
 def parser(parser):
@@ -105,7 +105,8 @@ def op_bootstrap(args, parser):
 def op_inspect(args, _):
     """Handler for command line operation inspect
     """
-    with Container(args.IMAGE) as cont:
+    connection = LXDConnection()
+    with Container(connection, args.IMAGE) as cont:
         sys.exit(subprocess.call(['lxc', 'exec', cont.name, '/bin/sh']))
 
 
