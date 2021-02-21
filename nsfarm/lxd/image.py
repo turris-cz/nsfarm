@@ -9,7 +9,8 @@ import hashlib
 import logging
 import pylxd
 from .connection import LXDConnection
-from .exceptions import LXDImageUndefined, LXDImageUnknowParent
+from .exceptions import LXDImageUndefined, LXDImageUnknowParent, LXDImageUnknowParameter
+from .device import Device, CharDevice
 
 logger = logging.getLogger(__package__)
 
@@ -34,10 +35,11 @@ class Image:
         if not self._dir_path.is_dir():
             self._dir_path = None
 
-        # Get parent
+        # Get image parameters
         with open(self._file_path) as file:
-            # This reads second line of file while initial hash removed
-            parent = next(itertools.islice(file, 1, 2))[1:].strip()
+            file.readline()  # Skip initial shebang
+            parent, *params = file.readline()[1:].strip().split()  # The initial character is '#' we want to ignore
+
         self._parent = None
         if parent.startswith("nsfarm:"):
             self._parent = Image(lxd_connection, parent[7:])
@@ -45,6 +47,17 @@ class Image:
             self._parent = self._lxd.images.images.get_by_alias(parent[7:])
         else:
             raise LXDImageUnknowParent(self.name, parent)
+
+        attributes = {
+            "char": CharDevice,
+        }
+        self._devices = []
+        for param in params:
+            devtype, value = param.split(':', maxsplit=1)
+            if devtype in attributes:
+                self._devices.append(attributes[devtype](value))
+            else:
+                raise LXDImageUnknowParameter(self.name, param)
 
     @functools.lru_cache(maxsize=1)
     def hash(self) -> str:
@@ -95,6 +108,14 @@ class Image:
         if img_hash is None:
             img_hash = self.hash()
         return f"nsfarm/{self.name}/{img_hash}"
+
+    def devices(self) -> list:
+        """Returns tuple with additional devices to be included in container.
+        These are not-exclusive devices.
+        """
+        parent_devices = self._parent.devices() if isinstance(self._parent, Image) else tuple()
+        # TODO what to do with duplicates?
+        return parent_devices + tuple(self._devices)
 
     def is_prepared(self, img_hash: str = None) -> bool:
         """Check if image we need is prepared.

@@ -21,3 +21,11 @@ class LXDImageUnknowParent(NSFarmLXDException):
 
     def __init__(self, img_name, parent):
         super().__init__(f"The image '{img_name}' has parent from unknown source: {parent}")
+
+
+class LXDImageUnknowParameter(NSFarmLXDException):
+    """This is raised when image defining script specifies invalid image parameter.
+    """
+
+    def __init__(self, img_name, parameter):
+        super().__init__(f"The image '{img_name}' has unknown parameter: {parameter}")

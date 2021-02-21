@@ -11,11 +11,12 @@ that is directory named `NAME` here. Content of this directory is merged to
 container as it is.
 
 It is expected that `NAME.sh` file has on first line shebang and on second line
-name of base image to be used. It is suggested to continue with comment block with
-description of container use. This is an example of such header:
+the name of a base image to be used and optional attributes. It is suggested to
+continue with comment block with description of container use. This is an example
+of such header:
 ```sh
 #!/bin/bash
-#images:alpine/3.10/amd64
+#images:alpine/3.10/amd64 char:/dev/net/tun
 ##################################################################################
 # This is example image definition. Please describe here what this container does.
 ##################################################################################
@@ -33,7 +34,8 @@ Base image
 The base idea of images is that we can stack images on top of each other and that
 makes it easier to have common base and additional scripts that do only minimal
 changes to it. This concept is base image. In definition file `NAME.sh` this is
-sourced from second line. Leading hash is expected and stripped.
+sourced from second line. Leading hash is expected and stripped as well as
+subsequent attributes.
 
 You can use either generic images from `linuximages.com` with prefix `images:` or
 other NSFarm images with prefix `nsfarm:`.
@@ -41,6 +43,21 @@ other NSFarm images with prefix `nsfarm:`.
 It is suggested to base you image on some other NSFarm image or if you really need
 then on Alpine Linux. The reason is to preserve minimal size and fast environment
 execution/preparation.
+
+Image attributes
+----------------
+Every image can also specify additional attributes that would be used when
+container is spawned. The attributes have in general format `TYPE:VALUE` and are
+separated by spaces.
+
+The following types are defined:
+* `char`: this specifies that given Unix character device should be accessible in
+  container. The value is path to required device.
+
+Attributes are inherited from base image. At the moment there is no way to negate
+that. At the same time specifying the same attribute again is going to create
+duplicate. Depending on an attribute this can be either wrong or good thing but in
+most cases wrong.
 
 Image preparation
 -----------------

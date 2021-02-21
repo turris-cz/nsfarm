@@ -4,6 +4,7 @@ import os
 import typing
 import logging
 import pexpect
+import itertools
 from .. import cli
 from .connection import LXDConnection
 from .image import Image
@@ -17,8 +18,8 @@ class Container:
     """
     # TODO log syslog somehow
 
-    def __init__(self, lxd_connection: LXDConnection, image: typing.Union[str, Image], devices: typing.List[Device] = (),
-                 internet: bool = True):
+    def __init__(self, lxd_connection: LXDConnection, image: typing.Union[str, Image],
+                 devices: typing.List[Device] = (), internet: bool = True):
         self.image_name = image.name if isinstance(image, Image) else image
         self._lxd = lxd_connection
         self._internet = internet
@@ -42,7 +43,7 @@ class Container:
             profiles.append(self._lxd.INTERNET_PROFILE)
         # Collect devices to attach to container
         devices = dict()
-        for device in self._devices:
+        for device in itertools.chain(self.image.devices(), self._devices):
             devices.update(device.acquire(self))
 
         # Create and start container
