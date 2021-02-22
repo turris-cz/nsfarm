@@ -126,7 +126,7 @@ def fixture_client_board(board_serial, board_root_password, lan1_client):
     board_serial.command('while ! [ -f /var/log/messages ]; do sleep 1; done && tail -f /var/log/messages')
     # Now spawn client container and connect
     nsfarm.cli.Shell(lan1_client.pexpect()).run('wait4network')
-    pexp = lan1_client.pexpect(['ssh', '192.168.1.1'])
+    pexp = lan1_client.pexpect(['ssh', '-q', '192.168.1.1'])
     pexp.expect_exact("root@192.168.1.1's password:")
     pexp.sendline(board_root_password)
     pexp.expect_exact("root@turris:")
