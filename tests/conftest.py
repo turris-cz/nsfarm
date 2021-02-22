@@ -7,6 +7,7 @@ import pytest
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
+import nsfarm.target
 
 
 def pytest_addoption(parser):
@@ -30,12 +31,8 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    # TODO handle targets in nsfarm library for central management
     # Parse target configuration
-    targets = configparser.ConfigParser()
-    targets.read(pathlib.Path("~/.nsfarm_targets.ini").expanduser())
-    targets.read(pathlib.PurePath(config.rootdir).joinpath("targets.ini"))
-    targets.read(config.getoption("-C") or ())
+    targets = nsfarm.target.Targets(config.getoption("-C") or (), rootdir=config.rootdir)
     # Set target configuration
     target = config.getoption("-T")
     if target is not None:  # None happes for example with --help argument
@@ -43,16 +40,24 @@ def pytest_configure(config):
             raise Exception(f"No configuration for target: {target}")
         setattr(config, "target_config", targets[target])
     # Set target branch
-    setattr(config, "target_branch", config.getoption("-B"))
+    branch = config.getoption("-B")
+    setattr(config, "target_branch", branch)
+
+    # Store configuration to metadata (basically just for pytest-html)
+    if hasattr(config, '_metadata'):
+        config._metadata.update({
+            'NSFarm-Target': target_name,
+            'NSFarm-TurrisBranch': branch,
+        })
 
 
 def pytest_runtest_setup(item):
-    board = item.config.target_config["board"]
+    board = item.config.target_config.board
     for boards in item.iter_markers(name="board"):
         if board not in boards.args:
             pytest.skip(f"test is not compatible with target: {board}")
     for conn in ("serial", "wan", "lan1", "lan2"):
-        if item.get_closest_marker(conn) is not None and conn not in item.config.target_config:
+        if item.get_closest_marker(conn) is not None and not item.config.target_config.is_configured(conn):
             pytest.skip(f"test requires connection: {conn}")
 
 
@@ -64,15 +69,14 @@ def fixture_board(request):
     """Brings board on. Nothing else.
     This is top most fixture for board. It returns board handle.
     """
-    brd = nsfarm.board.get_board(request.config)
+    brd = nsfarm.board.get_board(request.config.target_config)
     brd.power(True)
     request.addfinalizer(lambda: brd.power(False))
     return brd
 
 
-# TODO probably mark this with some LXD available/configured mark
 @pytest.fixture(scope="session", name="lxd")
-def fixture_lxd(request):
+def fixture_lxd():
     """Provides access to nsfarm.lxd.LXDConnection instance.
     """
     return nsfarm.lxd.LXDConnection()
@@ -82,14 +86,14 @@ def fixture_lxd(request):
 def fixture_wan(request):
     """Top level fixture used to share WAN interface handler.
     """
-    return nsfarm.lxd.NetInterface("wan", request.config.target_config['wan'])
+    return nsfarm.lxd.NetInterface("wan", request.config.target_config.wan)
 
 
 @pytest.fixture(scope="session", name="lan1", params=[pytest.param(None, marks=pytest.mark.lan1)])
 def fixture_lan1(request):
     """Top level fixture used to share LAN1 interface handler.
     """
-    return nsfarm.lxd.NetInterface("lan", request.config.target_config['lan1'])
+    return nsfarm.lxd.NetInterface("lan", request.config.target_config.lan1)
 
 
 ########################################################################################################################

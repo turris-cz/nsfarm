@@ -9,20 +9,18 @@ import serial.tools.miniterm
 from pexpect import fdpexpect
 from .. import cli
 from ..lxd import LXDConnection, Container, NetInterface
+from ..target.target import Target
 
 
 class Board(abc.ABC):
     """General abstract class defining handle for board.
     """
 
-    def __init__(self, target, target_config):
-        """Initialize board handler.
-        serial: path to serial tty
-        """
+    def __init__(self, target_config: Target):
         self.config = target_config
         # Open serial console to board
-        self._serial = serial.Serial(self.config['serial'], 115200)
-        self._fdlogging = cli.FDLogging(self._serial, logging.getLogger(f"{__package__}[{target}]"))
+        self._serial = serial.Serial(self.config.serial, 115200)
+        self._fdlogging = cli.FDLogging(self._serial, logging.getLogger(f"{__package__}[{target_config.name}]"))
         self._pexpect = fdpexpect.fdspawn(self._fdlogging.socket)
         # Set board to some known state
         self.reset(True)  # Hold in reset state
