@@ -18,6 +18,7 @@ import select
 import socket
 import threading
 import typing
+import pexpect
 
 _FLUSH_BUFFLEN = 2048
 
@@ -25,9 +26,14 @@ _FLUSH_BUFFLEN = 2048
 def pexpect_flush(pexpect_handle):
     """Flush all input on pexpect. This effectively reads everything.
     """
-    # TODO fix: this timeouts if there is nothing to flush
-    while len(pexpect_handle.read_nonblocking(_FLUSH_BUFFLEN)) == _FLUSH_BUFFLEN:
-        pass
+    # The read_nonblocking blocks when there is not at least one byte available for read (yeah you are reading it right
+    # the nonblocking read is blocking). The solution here is to use timeout with zero value. This raises timeout
+    # exception immediately once there is no input available.
+    while True:
+        try:
+            pexpect_handle.read_nonblocking(io.DEFAULT_BUFFER_SIZE, 0)
+        except pexpect.TIMEOUT:
+            return
 
 
 def run_exit_code_zero(exit_code):

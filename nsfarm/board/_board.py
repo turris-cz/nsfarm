@@ -82,7 +82,7 @@ class Board(abc.ABC):
         # Wait for bootup
         self._pexpect.expect_exact(["Router Turris successfully started.", ], timeout=120)
         # Note Shell sends new line which opens terminal for it
-        shell = cli.Shell(self._pexpect, flush=False)  # TODO why this flush timeouts?
+        shell = cli.Shell(self._pexpect)
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
         return shell
 
