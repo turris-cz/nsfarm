@@ -13,8 +13,12 @@ import nsfarm.target
 def pytest_addoption(parser):
     parser.addoption(
         "-T", "--target",
-        required=True,
-        help="Run tests on target BOARD.",
+        help="Run tests on specified TARGET.",
+        metavar="TARGET",
+    )
+    parser.addoption(
+        "--board",
+        help="Run tests on one of the targets with given BOARD unless exact target is specified.",
         metavar="BOARD",
     )
     parser.addoption(
@@ -34,11 +38,14 @@ def pytest_configure(config):
     # Parse target configuration
     targets = nsfarm.target.Targets(config.getoption("-C") or (), rootdir=config.rootdir)
     # Set target configuration
-    target = config.getoption("-T")
-    if target is not None:  # None happes for example with --help argument
-        if target not in targets:
-            raise Exception(f"No configuration for target: {target}")
-        setattr(config, "target_config", targets[target])
+    target_name = config.getoption("-T")
+    if target_name is None:
+        try:
+            target_name = next(targets.filter(board=config.getoption("--board")))
+        except StopIteration:
+            pass
+    if target_name in targets:  # Targets might not be set for example with --help argument
+        setattr(config, "target_config", targets[target_name])
     # Set target branch
     branch = config.getoption("-B")
     setattr(config, "target_branch", branch)
@@ -49,6 +56,11 @@ def pytest_configure(config):
             'NSFarm-Target': target_name,
             'NSFarm-TurrisBranch': branch,
         })
+
+
+def pytest_sessionstart(session):
+    if not hasattr(session.config, "target_config"):
+        raise pytest.UsageError("There is no available test target.")
 
 
 def pytest_runtest_setup(item):
