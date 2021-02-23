@@ -10,10 +10,6 @@ from pexpect import fdpexpect
 from .. import cli
 from ..lxd import LXDConnection, Container, NetInterface
 
-MINITERM_DEFAULT_EXIT = '\x1d'  # Ctrl+]
-MINITERM_DEFAULT_MENU = '\x14'  # Ctrl+T
-MINITERM_ENCODING = sys.getdefaultencoding()
-
 
 class Board(abc.ABC):
     """General abstract class defining handle for board.
@@ -92,30 +88,6 @@ class Board(abc.ABC):
 
         It has to implement TFTP uboot routines.
         """
-
-    def serial_miniterm(self):
-        """Runs interactive miniterm on serial TTY interface.
-
-        This can be used only if you disable capture in pytest (--capture=no).
-        """
-        miniterm = serial.tools.miniterm.Miniterm(self._serial, echo=False)
-        miniterm.exit_character = MINITERM_DEFAULT_EXIT
-        miniterm.menu_character = MINITERM_DEFAULT_MENU
-        miniterm.set_rx_encoding(MINITERM_ENCODING)
-        miniterm.set_tx_encoding(MINITERM_ENCODING)
-
-        key_quit = serial.tools.miniterm.key_description(miniterm.exit_character)
-        key_menu = serial.tools.miniterm.key_description(miniterm.menu_character)
-        key_help = serial.tools.miniterm.key_description('\x08')
-
-        sys.stderr.write('\n')
-        sys.stderr.write(f"--- Miniterm on {miniterm.serial.name} ---\n")
-        sys.stderr.write(f"--- Quit: {key_quit} | Menu: {key_menu} | Help: {key_help} followed by {key_menu} ---\n")
-
-        miniterm.start()
-        miniterm.join()
-
-        sys.stderr.write("\n--- Miniterm exit ---\n")
 
     @abc.abstractproperty
     def wan(self):

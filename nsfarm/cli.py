@@ -19,6 +19,7 @@ import socket
 import threading
 import typing
 import pexpect
+from . import mterm
 
 _FLUSH_BUFFLEN = 2048
 
@@ -113,6 +114,17 @@ class Cli(abc.ABC):
         automatically called in init unless you specify otherwise.
         """
         pexpect_flush(self._pe)
+
+    def mterm(self, new_prompt=True):
+        """Runs interactive terminal on this cli.
+
+        new_prompt controls if new semicolon commands should be automatically send to trigger print of new prompt in
+        terminal.
+        """
+        if new_prompt:
+            self._pe.sendline(";")
+            os.read(self._pe.fileno(), 2)  # Eat up the semicolon and new line character
+        mterm.mterm(self._pe.fileno())
 
 
 class Shell(Cli):
