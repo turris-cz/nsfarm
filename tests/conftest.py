@@ -162,7 +162,7 @@ def fixture_basic_isp(lxd, board, client_board, wan):
         client_board.run("uci set network.wan.ipaddr='172.16.1.42'")
         client_board.run("uci set network.wan.netmask='255.240.0.0'")
         client_board.run("uci set network.wan.gateway='172.16.1.1'")
-        client_board.run("uci set network.wan.dns='1.1.1.1'")  # TODO configure to ISP
+        client_board.run("uci set network.wan.dns='172.16.1.1'")
         client_board.run("uci commit network")
         client_board.run("/etc/init.d/network restart")
         client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
