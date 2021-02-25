@@ -9,7 +9,7 @@ import hashlib
 import logging
 import pylxd
 from .connection import LXDConnection
-from .exceptions import LXDImageUndefined, LXDImageUnknowParent, LXDImageUnknowParameter
+from .exceptions import LXDImageUndefinedError, LXDImageParentError, LXDImageParameterError
 from .device import Device, CharDevice
 
 logger = logging.getLogger(__package__)
@@ -31,7 +31,7 @@ class Image:
 
         # Verify existence of image definition
         if not self._file_path.is_file():
-            raise LXDImageUndefined(self.name, self._file_path)
+            raise LXDImageUndefinedError(self.name, self._file_path)
         if not self._dir_path.is_dir():
             self._dir_path = None
 
@@ -46,7 +46,7 @@ class Image:
         elif parent.startswith("images:"):
             self._parent = self._lxd.images.images.get_by_alias(parent[7:])
         else:
-            raise LXDImageUnknowParent(self.name, parent)
+            raise LXDImageParentError(self.name, parent)
 
         attributes = {
             "char": CharDevice,
@@ -57,7 +57,7 @@ class Image:
             if devtype in attributes:
                 self._devices.append(attributes[devtype](value))
             else:
-                raise LXDImageUnknowParameter(self.name, param)
+                raise LXDImageParameterError(self.name, param)
 
     @functools.lru_cache(maxsize=1)
     def hash(self) -> str:

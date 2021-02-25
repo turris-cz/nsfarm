@@ -25,5 +25,5 @@ def test_image_prepare(connection):
 def test_nonexisting_image(connection):
     """Try to initialize Image for undefined image name.
     """
-    with pytest.raises(exceptions.LXDImageUndefined):
+    with pytest.raises(exceptions.LXDImageUndefinedError):
         Image(connection, NOEX_IMG)

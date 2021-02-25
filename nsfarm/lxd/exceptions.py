@@ -2,12 +2,12 @@
 """
 
 
-class NSFarmLXDException(Exception):
+class NSFarmLXDError(Exception):
     """Generic failure in NSFarm's LXD code.
     """
 
 
-class LXDImageUndefined(NSFarmLXDException):
+class LXDImageUndefinedError(NSFarmLXDError):
     """Image with given name is not defined by appropriate files (in imgs directory in repository root).
     """
 
@@ -15,7 +15,7 @@ class LXDImageUndefined(NSFarmLXDException):
         super().__init__(f"There seems to be no file describing image '{img_name}': {file_path}")
 
 
-class LXDImageUnknowParent(NSFarmLXDException):
+class LXDImageParentError(NSFarmLXDError):
     """This is raised when image defining script specifies invalid or none parent name.
     """
 
@@ -23,7 +23,7 @@ class LXDImageUnknowParent(NSFarmLXDException):
         super().__init__(f"The image '{img_name}' has parent from unknown source: {parent}")
 
 
-class LXDImageUnknowParameter(NSFarmLXDException):
+class LXDImageParameterError(NSFarmLXDError):
     """This is raised when image defining script specifies invalid image parameter.
     """
 
