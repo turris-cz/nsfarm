@@ -82,12 +82,8 @@ NSFarm utility
 `nsfarm` is not only library but serves at the same time as utility Python
 program. It implements some common operations you might want to use.
 
-To invoke NSFarm utility you have to run in root of this project following:
-```sh
-python3 -m nsfarm
-```
-
-Use `-h` to see documentation and abilities of this utility.
+To invoke NSFarm utility you can use script `tool.sh`. Use `./tool.sh -h` to see
+documentation and abilities of this utility.
 
 
 How it works
