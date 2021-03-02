@@ -190,3 +190,21 @@ def fixture_basic_isp(lxd, board, client_board, wan):
         client_board.run("uci delete network.wan.gateway")
         client_board.run("uci delete network.wan.dns")
         client_board.run("uci commit network")
+
+
+########################################################################################################################
+# Reports enrichment ###################################################################################################
+
+def pytest_report_header(config):
+    return (
+        f"nsfarm-target: {config.target_config if config.getoption('verbose') > 0 else config.target_config.name}",
+        f"nsfarm-branch: {config.target_branch}",
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def log_target_to_testsuite_property(request, record_testsuite_property):
+    """Include target and branch in test results as global properties.
+    """
+    record_testsuite_property("nsfarm-target", request.config.target_config.name)
+    record_testsuite_property("nsfarm-branch", request.config.target_branch)
