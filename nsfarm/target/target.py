@@ -32,6 +32,7 @@ class Target:
         """
         return bool(
             self.board and self.board in BOARDS and
+            self.serial_number and len(self.serial_number) == 16 and
             self.serial and
             self.wan
         )
@@ -61,6 +62,12 @@ class Target:
         """Target board. It can be one of: omnia
         """
         return self._conf.get("board")
+
+    @property
+    def serial_number(self) -> str:
+        """Serial number of target board.
+        """
+        return self._conf.get("serial_number")
 
     @property
     def serial(self) -> str:
