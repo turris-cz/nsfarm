@@ -68,7 +68,7 @@ def pytest_runtest_setup(item):
     for boards in item.iter_markers(name="board"):
         if board not in boards.args:
             pytest.skip(f"test is not compatible with target: {board}")
-    for conn in ("serial", "wan", "lan1", "lan2"):
+    for conn in ("lan1", "lan2"):
         if item.get_closest_marker(conn) is not None and not item.config.target_config.is_configured(conn):
             pytest.skip(f"test requires connection: {conn}")
 
@@ -76,7 +76,7 @@ def pytest_runtest_setup(item):
 ########################################################################################################################
 # Resources shared among all tests #####################################################################################
 
-@pytest.fixture(scope="session", name="board", params=[pytest.param(None, marks=pytest.mark.serial)])
+@pytest.fixture(scope="session", name="board")
 def fixture_board(request):
     """Brings board on. Nothing else.
     This is top most fixture for board. It returns board handle.
@@ -94,14 +94,14 @@ def fixture_lxd():
     return nsfarm.lxd.LXDConnection()
 
 
-@pytest.fixture(scope="session", name="wan", params=[pytest.param(None, marks=pytest.mark.wan)])
+@pytest.fixture(scope="session", name="wan")
 def fixture_wan(request):
     """Top level fixture used to share WAN interface handler.
     """
     return nsfarm.lxd.NetInterface("wan", request.config.target_config.wan)
 
 
-@pytest.fixture(scope="session", name="lan1", params=[pytest.param(None, marks=pytest.mark.lan1)])
+@pytest.fixture(scope="session", name="lan1", params=[pytest.param("lan1", marks=pytest.mark.lan1)])
 def fixture_lan1(request):
     """Top level fixture used to share LAN1 interface handler.
     """
