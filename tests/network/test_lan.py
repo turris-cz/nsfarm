@@ -1,8 +1,7 @@
 """Test LAN access of Internet and software on LAN side.
 """
-import time
 import pytest
-import nsfarm.lxd
+import nsfarm
 from . import common
 # pylint: disable=no-self-use
 
@@ -15,4 +14,6 @@ class TestInternet(common.InternetTests):
     def client(self, basic_isp, lan1_client):
         """With basic router config and client is client container.
         """
-        yield nsfarm.cli.Shell(lan1_client.pexpect())
+        shell = nsfarm.cli.Shell(lan1_client.pexpect())
+        shell.run("wait4network")
+        yield shell
