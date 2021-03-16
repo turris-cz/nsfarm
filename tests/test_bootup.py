@@ -2,6 +2,7 @@
 general errors such as disabled core services.
 """
 import pytest
+from nsfarm.toolbox import service_is_running
 
 
 def test_syslog_ng(client_board):
@@ -27,6 +28,29 @@ def test_processes(client_board, process):
     """Check that various essential processes are running.
     """
     client_board.run(f"pgrep -x '{process}' || pgrep -x \"$(which '{process}')\"")
+
+
+@pytest.mark.parametrize("service", [
+    "cron",
+    "dnsmasq",
+    "kresd",
+    "foris-controller",
+    "foris-ws",
+    "fosquitto",
+    "haveged",
+    "lighttpd",
+    "network",
+    "odhcpd",
+    "rpcd",
+    "sshd",
+    "syslog-ng",
+    "sysntpd",
+    "umdns",
+])
+def test_services(client_board, service):
+    """Check that various essential processes are running.
+    """
+    assert service_is_running(service, client_board)
 
 
 def test_lighttpd(client_board):
