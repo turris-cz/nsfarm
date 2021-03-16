@@ -64,10 +64,15 @@ def pytest_sessionstart(session):
 
 
 def pytest_runtest_setup(item):
-    board = item.config.target_config.board
-    for boards in item.iter_markers(name="board"):
-        if board not in boards.args:
+    def check_board(boards, expected):
+        board = item.config.target_config.board
+        if (board in boards.args) is expected:
             pytest.skip(f"test is not compatible with target: {board}")
+
+    for boards in item.iter_markers(name="board"):
+        check_board(boards, False)
+    for boards in item.iter_markers(name="not_board"):
+        check_board(boards, True)
     for conn in ("lan1", "lan2"):
         if item.get_closest_marker(conn) is not None and not item.config.target_config.is_configured(conn):
             pytest.skip(f"test requires connection: {conn}")

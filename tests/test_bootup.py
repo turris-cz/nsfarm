@@ -14,7 +14,8 @@ def test_syslog_ng(client_board):
 @pytest.mark.parametrize("process", [
     "crond",
     "dnsmasq",
-    "kresd",
+    pytest.param("kresd", marks=pytest.mark.not_board("turris1x")),
+    pytest.param("unbound", marks=pytest.mark.board("turris1x")),
     "lighttpd",
     "mosquitto",
     "netifd",
