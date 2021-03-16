@@ -118,12 +118,13 @@ class Cli(abc.ABC):
     def mterm(self, new_prompt=True):
         """Runs interactive terminal on this cli.
 
-        new_prompt controls if new semicolon commands should be automatically send to trigger print of new prompt in
-        terminal.
+        new_prompt controls if new command with no effect should be automatically send to trigger print of new prompt in
+        terminal. It is just something nice to have but it might not be desirable sometimes so it is possible to disable
+        it.
         """
         if new_prompt:
-            self._pe.sendline(";")
-            os.read(self._pe.fileno(), 2)  # Eat up the semicolon and new line character
+            self._pe.sendline(self._NOCMD)
+            os.read(self._pe.fileno(), len(self._NOCMD) + 1)  # Eat up no command and new line character
         mterm.mterm(self._pe.fileno())
 
 
@@ -133,6 +134,7 @@ class Shell(Cli):
     This is tested to handle busybox and bash.
     """
     _COLUMNS_NUM = 800
+    _NOCMD = ":"
     _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?)\$ '"
     _NSF_PROMPT = r"(\r\n|\n\r|^)nsfprompt:([0-9]+)($|#) "
     _INITIAL_PROMPTS = [
@@ -194,6 +196,7 @@ class Shell(Cli):
 class Uboot(Cli):
     """U-boot prompt support class.
     """
+    _NOCMD = ";"
     _PROMPT = "(\r\n|\n\r|^)=> "
     _EXIT_CODE_ECHO = "echo $?"
 
