@@ -133,7 +133,7 @@ class Image:
             self.lxd_image = self._lxd.local.images.get_by_alias(self.alias())
             return
 
-        logger.warning("Bootstrapping image: %s", self.alias())
+        logger.debug("Want to bootstrap image: %s", self.alias())
 
         image_source = {
             'type': 'image',
@@ -149,6 +149,7 @@ class Image:
             image_source["alias"] = self._parent.fingerprint
 
         container_name = f"nsfarm-bootstrap-{self.name}-{self.hash()}"
+        logger.warning("Bootstrapping image '%s': %s", self.alias(), container_name)
 
         try:
             container = self._lxd.local.containers.create({
