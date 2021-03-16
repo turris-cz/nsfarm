@@ -6,6 +6,7 @@ import sys
 import fcntl
 import select
 import termios
+import logging
 import warnings
 
 
@@ -30,6 +31,8 @@ def mterm(fileno: int):
     if not sys.stdin.isatty():
         warnings.warn("Microterm works only if stdin is directly the terminal.", RuntimeWarning)
         return
+    prev_log_level = logging.getLogger().getEffectiveLevel()
+    logging.getLogger().setLevel(logging.CRITICAL)
     orig_tio = termios.tcgetattr(sys.stdin)
     orig_filestatus = fcntl.fcntl(fileno, fcntl.F_GETFL)
     print("--- Microterm (use ^] to exit) ---", file=sys.stderr)
@@ -55,4 +58,5 @@ def mterm(fileno: int):
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSANOW, orig_tio)
         fcntl.fcntl(fileno, fcntl.F_SETFL, orig_filestatus)
+        logging.getLogger().setLevel(prev_log_level)
         print("\n--- Microterm exit ---", file=sys.stderr)
