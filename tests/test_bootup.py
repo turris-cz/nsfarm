@@ -3,6 +3,7 @@ general errors such as disabled core services.
 """
 import pytest
 from nsfarm.toolbox import service_is_running
+from nsfarm.cli import Shell
 
 
 def test_syslog_ng(client_board):
@@ -54,7 +55,8 @@ def test_services(client_board, service):
     assert service_is_running(service, client_board)
 
 
-def test_lighttpd(client_board):
+def test_lighttpd(lan1_client):
     """Test that there is access to router interface.
     """
-    # TODO
+    pexp = Shell(lan1_client.pexpect())
+    pexp.run("wget 192.168.1.1 && rm index.html")
