@@ -32,10 +32,10 @@ def test_processes(client_board, process):
     client_board.run(f"pgrep -x '{process}' || pgrep -x \"$(which '{process}')\"")
 
 
-@pytest.mark.parametrize("service", [
+basic_services = [
+    "atd",
     "cron",
     "dnsmasq",
-    "kresd",
     "foris-controller",
     "foris-ws",
     "fosquitto",
@@ -48,11 +48,44 @@ def test_processes(client_board, process):
     "syslog-ng",
     "sysntpd",
     "umdns",
+]
+
+
+@pytest.mark.parametrize("service", basic_services + [
+    pytest.param("kresd", marks=pytest.mark.not_board("turris1x")),
+    pytest.param("unbound", marks=pytest.mark.board("turris1x")),
 ])
-def test_services(client_board, service):
-    """Check that various essential processes are running.
+def test_running_services(client_board, service):
+    """Check that various essential services are running.
     """
     assert service_is_running(service, client_board)
+
+
+@pytest.mark.parametrize("service", basic_services + [
+    "boot",
+    "done",
+    "gpio_switch",
+    "led",
+    pytest.param("mox_autosetup", marks=pytest.mark.board("mox")),
+    pytest.param("rainbow", marks=pytest.mark.not_board("mox")),
+    "resolver",
+    pytest.param("setup_led", marks=pytest.mark.board("turris1x")),
+    "srv",
+    "sysctl",
+    "sysfixtime",
+    "sysfsutils",
+    "system",
+    "ucitrack",
+    "umount",
+    pytest.param("update_mac", marks=pytest.mark.board("turris1x")),
+    "updater-journal-recover",
+    "urandom_seed",
+    pytest.param("zram", marks=pytest.mark.board("mox")),
+])
+def test_services(client_board, service):
+    """Check that various essential services are enabled.
+    """
+    client_board.run(f"/etc/init.d/{service} enabled")
 
 
 def test_lighttpd(lan1_client):
