@@ -327,9 +327,8 @@ class PexpectLogging:
         """
         jbuf = self.linebuf + buf
         lines = jbuf.splitlines(keepends=True)
-        if lines[-1] or lines[-1][-1] not in self._EXPECTED_EOL:
-            # The last line is not terminated (no new line character) so just preserve it
-            self.linebuf = lines.pop()
+        # If the last line is not terminated (no new line character) so just preserve it
+        self.linebuf = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b''
         for line in lines:
             self._log(line)
 
