@@ -31,6 +31,17 @@ class Board(abc.ABC):
         """
         return self._pexpect
 
+    def set_serial_flush(self, flush: bool):
+        """Enables/Disables serial data flush.
+        This disables data propagation in logging and flushes pexpect on disable. The effect is that output is only
+        logged without propagation to pexpect.
+        This is required as at some point we just use serial console for logs without reading it. In such case it is
+        just matter of time logger gets stuck as pipe toward pexpect gets filled. This prevents this from happening.
+        """
+        self._fdlogging.set_propagation(not flush)
+        if flush:
+            cli.pexpect_flush(self._pexpect)
+
     def power(self, state):
         """Set power state.
         """
@@ -69,7 +80,7 @@ class Board(abc.ABC):
         # Now load image from TFTP
         with Container(lxd_connection, "boot", devices=[device_wan, ]) as cont:
             ccli = cli.Shell(cont.pexpect())
-            ccli.run(f"prepare_turris_image {os_branch}")
+            ccli.run(f"prepare_turris_image '{os_branch}'")
             uboot.run('setenv ipaddr 192.168.1.142')
             uboot.run('setenv serverip 192.168.1.1')
             self._board_bootup(uboot)

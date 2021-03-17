@@ -235,6 +235,7 @@ class FDLogging:
         self._out_level = out_level
         self._fileno = fileno if isinstance(fileno, int) else fileno.fileno()
         self._our_sock, self._user_sock = socket.socketpair()
+        self._propagate = True
 
         self._orig_filestatus = fcntl.fcntl(self._fileno, fcntl.F_GETFL)
         fcntl.fcntl(self._fileno, fcntl.F_SETFL, self._orig_filestatus | os.O_NONBLOCK)
@@ -248,6 +249,12 @@ class FDLogging:
         """Returns socket for user to use to communicate trough this logged passtrough.
         """
         return self._user_sock
+
+    def set_propagation(self, propagate: bool):
+        """Configures if input should be propagated to socket or not. Output is still propagated to file but input read
+        from file is simply logged and dropped.
+        """
+        self._propagate = propagate
 
     def close(self):
         """Close socket and stop logging.
@@ -299,7 +306,8 @@ class FDLogging:
                 if event == select.POLLNVAL:
                     return
                 new_data = os.read(fileno, io.DEFAULT_BUFFER_SIZE)
-                os.write(output[fileno], new_data)
+                if fileno != self._fileno or self._propagate:
+                    os.write(output[fileno], new_data)
                 data[fileno] = self._log(data[fileno], new_data, level[fileno])
 
 

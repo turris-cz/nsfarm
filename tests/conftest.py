@@ -137,7 +137,7 @@ def fixture_board_root_password(request, board_serial):
 
 
 @pytest.fixture(name="client_board", scope="module")
-def fixture_client_board(board_serial, board_root_password, lan1_client):
+def fixture_client_board(board, board_serial, board_root_password, lan1_client):
     """Starts client on LAN1 and connect to board using SSH.
     Provides instance of nsfarm.cli.Shell() connected to board shell using SSH trough client container.
 
@@ -145,6 +145,8 @@ def fixture_client_board(board_serial, board_root_password, lan1_client):
     """
     # Let's have syslog on serial console as well as kernel log
     board_serial.command('while ! [ -f /var/log/messages ]; do sleep 1; done && tail -f /var/log/messages')
+    board.set_serial_flush(True)
+
     # Now spawn client container and connect
     nsfarm.cli.Shell(lan1_client.pexpect()).run('wait4network')
     pexp = lan1_client.pexpect(['ssh', '-q', '192.168.1.1'])
@@ -152,6 +154,8 @@ def fixture_client_board(board_serial, board_root_password, lan1_client):
     pexp.sendline(board_root_password)
     pexp.expect_exact("root@turris:")
     yield nsfarm.cli.Shell(pexp, flush=False)  # TODO drop this flush disable when it works
+
+    board.set_serial_flush(False)
     # Kill tail -f on serial console
     board_serial.send('\x03')
     board_serial.prompt()
