@@ -85,7 +85,7 @@ class Image:
                 elif path.is_file():
                     # For plain file include content
                     self._md5sum_update_file(md5sum, path)
-                elif path.is_link():
+                elif path.is_symlink():
                     # For link include its target as well
                     md5sum.update(str(path.resolve()).encode())
         return md5sum.hexdigest()
