@@ -8,10 +8,11 @@ def test_new_container(connection):
     """Try to create container for BASE_IMG.
     """
     container = Container(connection, BASE_IMG)
-    assert container.image_name == BASE_IMG
     assert isinstance(container.image, Image)
-    assert container.internet  # In default internet should be enabled
-    assert container.devices == tuple()
+    assert container.image.name == BASE_IMG
+    assert not container.image.wants_internet  # Base image should not have Internet enabled as a baseline
+    assert container.device_map == dict()  # We provided no device map thus it has to be empty
+    assert container.devices == dict()  # Base image has no devices assigned
 
 
 def test_new_container_image(connection):
@@ -19,7 +20,8 @@ def test_new_container_image(connection):
     """
     image = Image(connection, BASE_IMG)
     container = Container(connection, image)
-    assert container.image_name == BASE_IMG
+    assert isinstance(container.image, Image)
+    assert container.image.name == BASE_IMG
     assert container.image is image  # This is intentionally 'is' as it should be the same instance
 
 

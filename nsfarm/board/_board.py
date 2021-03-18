@@ -8,7 +8,7 @@ import serial
 import serial.tools.miniterm
 from pexpect import fdpexpect
 from .. import cli
-from ..lxd import LXDConnection, Container, NetInterface
+from ..lxd import LXDConnection, Container
 from ..target.target import Target
 
 
@@ -66,11 +66,10 @@ class Board(abc.ABC):
         self._pexpect.sendline("")
         return cli.Uboot(self._pexpect)
 
-    def bootup(self, lxd_connection: LXDConnection, device_wan: NetInterface, os_branch: str) -> cli.Shell:
+    def bootup(self, lxd_connection: LXDConnection, os_branch: str) -> cli.Shell:
         """Boot board using TFTP boot. This ensures that board is booted up and ready to accept commands.
 
         lxd_connection: instance of nsfarm.lxd.LXDConnection
-        device_wan: Wan device to board. This is instance of nsfarm.lxd.NetInterface.
         os_branch: Turris OS branch to download medkit from.
 
         Returns instance of cli.Shell
@@ -78,7 +77,7 @@ class Board(abc.ABC):
         # First get U-Boot prompt
         uboot = self.uboot()
         # Now load image from TFTP
-        with Container(lxd_connection, "boot", devices=[device_wan, ]) as cont:
+        with Container(lxd_connection, "boot", self.config.device_map()) as cont:
             ccli = cli.Shell(cont.pexpect())
             ccli.run(f"prepare_turris_image '{os_branch}'")
             uboot.run('setenv ipaddr 192.168.1.142')

@@ -48,18 +48,23 @@ execution/preparation.
 ## Image attributes
 
 Every image can also specify additional attributes that would be used when
-container is spawned. The attributes have in general format `TYPE:VALUE` and are
-separated by spaces.
+container is spawned. The attributes have in general format `TYPE:VALUE` or just
+plain `TYPE`. Attributes are separated by spaces.
 
 The following types are defined:
-
+* `internet`: specifies that container should have access to the Internet. Note
+  that during image preparation the Internet is always available. No argument is
+  expected.
+* `net`: this specifies that there is going to be network interface assigned to
+  container. The `VALUE` is name of it in the container. The network interface
+  passed to container is macvlan. The master/parent interface has to be specified
+  in runtime using map.
 * `char`: this specifies that given Unix character device should be accessible in
   container. The value is path to required device.
 
-Attributes are inherited from base image. At the moment there is no way to negate
-that. At the same time specifying the same attribute again is going to create
-duplicate. Depending on an attribute this can be either wrong or good thing but in
-most cases wrong.
+All attributes are inherited from base image. To remove/mask some attribute you
+can prepend it by `!`. As an example to disable the Internet access use
+`!internet`.
 
 ## Image preparation
 

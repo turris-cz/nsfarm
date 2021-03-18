@@ -2,15 +2,15 @@
 """
 import io
 import time
-import itertools
-import functools
+import typing
+import logging
 import pathlib
 import hashlib
-import logging
+import functools
 import pylxd
 from .connection import LXDConnection
 from .exceptions import LXDImageUndefinedError, LXDImageParentError, LXDImageParameterError
-from .device import Device, CharDevice
+from .device import Device, NetInterface, CharDevice
 
 logger = logging.getLogger(__package__)
 
@@ -49,15 +49,25 @@ class Image:
             raise LXDImageParentError(self.name, parent)
 
         attributes = {
+            "internet": lambda value: True,
+            "net": NetInterface,
             "char": CharDevice,
         }
-        self._devices = []
+        self._devices = dict()
         for param in params:
-            devtype, value = param.split(':', maxsplit=1)
+            split_param = param.split(':', maxsplit=1)
+            negate = split_param[0][0] == '!'
+            devtype = split_param[0].lstrip('!')
+            value = split_param[1] if len(split_param) > 1 else None
             if devtype in attributes:
-                self._devices.append(attributes[devtype](value))
+                if not negate:
+                    self._devices[param] = attributes[devtype](value)
+                else:
+                    self._devices.pop(param, None)
             else:
                 raise LXDImageParameterError(self.name, param)
+        self._wants_internet = self._devices.pop(
+            "internet", self._parent.wants_internet if isinstance(self._parent, Image) else False)
 
     @functools.lru_cache(maxsize=1)
     def hash(self) -> str:
@@ -109,13 +119,21 @@ class Image:
             img_hash = self.hash()
         return f"nsfarm/{self.name}/{img_hash}"
 
-    def devices(self) -> list:
+    def devices(self) -> typing.Dict[str, Device]:
         """Returns tuple with additional devices to be included in container.
         These are not-exclusive devices.
         """
-        parent_devices = self._parent.devices() if isinstance(self._parent, Image) else tuple()
-        # TODO what to do with duplicates?
-        return parent_devices + tuple(self._devices)
+        devices = dict()
+        if isinstance(self._parent, Image):
+            devices.update(self._parent.devices())
+        devices.update(self._devices)
+        return devices
+
+    @property
+    def wants_internet(self) -> bool:
+        """If container based on this image should have access to the Internet.
+        """
+        return self._wants_internet
 
     def is_prepared(self, img_hash: str = None) -> bool:
         """Check if image we need is prepared.

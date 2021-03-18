@@ -17,11 +17,11 @@ class TestStatic(common.InternetTests):
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def client(self, lxd, board, client_board, wan):
+    def client(self, lxd, device_map, board, client_board):
         """Configure WAN to use static IP
         """
         print("We are in client fixture once")
-        with nsfarm.lxd.Container(lxd, 'isp-common', devices=[wan, ]):
+        with nsfarm.lxd.Container(lxd, 'isp-common', device_map):
             # TODO implement some utility class to set and revert uci configs on router
             client_board.run("uci set network.wan.proto='static'")
             client_board.run("uci set network.wan.ipaddr='172.16.1.42'")
@@ -47,10 +47,10 @@ class TestDHCP(common.InternetTests):
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def client(self, lxd, board, client_board, wan):
+    def client(self, lxd, device_map, board, client_board):
         """Configure WAN to use DHCP
         """
-        with nsfarm.lxd.Container(lxd, 'isp-dhcp', devices=[wan, ]):
+        with nsfarm.lxd.Container(lxd, 'isp-dhcp', device_map):
             client_board.run("uci set network.wan.proto='dhcp'")
             client_board.run("uci commit network")
             client_board.run("/etc/init.d/network restart")

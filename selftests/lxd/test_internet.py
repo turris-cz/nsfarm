@@ -10,7 +10,7 @@ from .test_image import BASE_IMG
 def container(connection):
     """Base container to be used for testing.
     """
-    with Container(connection, BASE_IMG) as cont:
+    with Container(connection, BASE_IMG, internet=True) as cont:
         shell = Shell(cont.pexpect())
         shell.run("wait4network")
         yield shell

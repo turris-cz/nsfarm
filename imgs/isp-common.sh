@@ -1,5 +1,5 @@
 #!/bin/bash
-# nsfarm:base-alpine
+# nsfarm:base-alpine internet net:wan
 ##################################################################################
 # This is base for various ISP like containers.
 ##################################################################################

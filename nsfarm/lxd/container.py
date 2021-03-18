@@ -5,10 +5,12 @@ import typing
 import logging
 import pexpect
 import itertools
+import warnings
 from .. import cli
 from .connection import LXDConnection
 from .image import Image
 from .device import Device
+from .exceptions import LXDDeviceError
 
 logger = logging.getLogger(__package__)
 
@@ -18,15 +20,17 @@ class Container:
     """
     # TODO log syslog somehow
 
-    def __init__(self, lxd_connection: LXDConnection, image: typing.Union[str, Image],
-                 devices: typing.List[Device] = (), internet: bool = True):
-        self.image_name = image.name if isinstance(image, Image) else image
+    def __init__(self, lxd_connection: LXDConnection, image: typing.Union[str, Image], device_map: dict = None,
+                 internet: typing.Optional[bool] = None, strict: bool = True):
         self._lxd = lxd_connection
-        self._internet = internet
-        self._devices = tuple(devices)
+        self._internet = False
+        self._device_map = device_map
+        self._override_wants_internet = internet
+        self._strict = strict
+        self._devices = dict()
 
-        self._logger = logging.getLogger(f"{__package__}[{self.image_name}]")
-        self.image = image if isinstance(image, Image) else Image(lxd_connection, image)
+        self._image = image if isinstance(image, Image) else Image(lxd_connection, image)
+        self._logger = logging.getLogger(f"{__package__}[{self._image.name}]")
 
         self.lxd_container = None
 
@@ -35,33 +39,39 @@ class Container:
         """
         if self.lxd_container is not None:
             return
-        self.image.prepare()
 
-        # Collect profiles to be assigned to container
+        # Collect profiles to be assigned to the container
         profiles = [self._lxd.ROOT_PROFILE, ]
-        if self._internet:
+        if (self._override_wants_internet is None and self._image.wants_internet) or self._override_wants_internet:
             profiles.append(self._lxd.INTERNET_PROFILE)
-        # Collect devices to attach to container
-        devices = dict()
-        for device in itertools.chain(self.image.devices(), self._devices):
-            devices.update(device.acquire(self))
+        # Collect devices to be attached to the container
+        for name, device in self._image.devices().items():
+            dev = device.acquire(self._device_map)
+            if dev:
+                self._devices[name] = dev
+                continue
+            if self._strict:
+                raise LXDDeviceError(name)
+            warnings.warn(f"Unable to initialize device: {name}")
+
+        self._image.prepare()
 
         # Create and start container
         self.lxd_container = self._lxd.local.containers.create({
             'name': self._container_name(),
             'ephemeral': True,
             'profiles': profiles,
-            'devices': devices,
+            'devices': self._devices,
             'source': {
                 'type': 'image',
-                'alias': self.image.alias(),
+                'alias': self._image.alias(),
             },
         }, wait=True)
         self.lxd_container.start(wait=True)
         logger.debug("Container prepared: %s", self.lxd_container.name)
 
     def _container_name(self, prefix="nsfarm"):
-        name = f"{prefix}-{self.image_name}-{os.getpid()}"
+        name = f"{prefix}-{self._image.name}-{os.getpid()}"
         if self._lxd.local.containers.exists(name):
             i = 1
             while self._lxd.local.containers.exists(f"{name}-{i}"):
@@ -77,12 +87,6 @@ class Container:
         if self.lxd_container is None:
             return  # No cleanup is required
         logger.debug("Removing container: %s", self.lxd_container.name)
-        # First freeze and remove devices
-        self.lxd_container.freeze(wait=True)
-        self.lxd_container.devices = dict()
-        self.lxd_container.save()
-        for device in self._devices:
-            device.release(self)
         # Now stop container (Note: container is ephemeral so it is removed automatically after stop)
         self.lxd_container.stop()
         self.lxd_container = None
@@ -112,13 +116,22 @@ class Container:
         return self.lxd_container.name
 
     @property
-    def internet(self) -> bool:
-        """If host internet connection should be accessible in this instance.
+    def image(self) -> Image:
+        """Allows access to image used for this container.
         """
-        return self._internet
+        return self._image
+
+    @property
+    def device_map(self) -> dict:
+        """Provides access to device map this container is using. Note that changes performed after container
+        preparation have no effect.
+        """
+        if self._device_map is None:
+            return dict()
+        return self._device_map
 
     @property
     def devices(self) -> typing.Tuple[Device]:
-        """List of passed devices from host.
+        """Dict of passed devices from host.
         """
-        return tuple(self._devices)
+        return self._devices

@@ -29,3 +29,12 @@ class LXDImageParameterError(NSFarmLXDError):
 
     def __init__(self, img_name, parameter):
         super().__init__(f"The image '{img_name}' has unknown parameter: {parameter}")
+
+
+class LXDDeviceError(NSFarmLXDError):
+    """Image specifies device that wasn't located in device map and thus is not available or there was any other problem
+    to get full device specification.
+    """
+
+    def __init__(self, device):
+        super().__init__(f"The device can't be initialized: {device}")

@@ -98,6 +98,15 @@ class Target:
         """
         return name in self._conf
 
+    def device_map(self):
+        """Provides full device map for all devices for LXD containers.
+        """
+        return {
+            "net:wan": self.wan,
+            "net:lan1": self.lan1,
+            "net:lan2": self.lan2,
+        }
+
     def __str__(self):
         representation = {"name": self._name}
         for attr in ("board", "serial_number", "serial", "wan", "lan1", "lan2"):

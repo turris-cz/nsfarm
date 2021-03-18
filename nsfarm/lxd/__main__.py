@@ -32,7 +32,7 @@ def parser(parser):
     bootstrap.add_argument(
         'IMG',
         nargs='*',
-        help='Image to bootstrap.'
+        help='Name of image to bootstrap.'
     )
     bootstrap.add_argument(
         '-a', '--all',
@@ -46,7 +46,18 @@ def parser(parser):
     inspect.set_defaults(lxd_op='inspect')
     inspect.add_argument(
         'IMAGE',
-        help="""
+        help="Name of image to inspect."
+    )
+    inspect.add_argument(
+        '-i', '--internet',
+        action='store_true',
+        help='Get the Internet access in container even if image specifies no Internet access.'
+    )
+    inspect.add_argument(
+        '-d', '--device',
+        action='append',
+        help="""Adds pair to device map. The argument (one pair) has to have format DEVICE=RESOURCE where DEVICE is full
+        device specification from image and RESOURCE is resource mapped to it.
         """
     )
 
@@ -102,11 +113,22 @@ def op_bootstrap(args, parser):
     sys.exit(0 if success else 1)
 
 
-def op_inspect(args, _):
+def op_inspect(args, parser):
     """Handler for command line operation inspect
     """
+    kwargs = dict()
+    if args.internet:
+        kwargs["internet"] = True
+    device_map = dict()
+    if args.device:
+        for device_spec in args.device:
+            if '=' not in device_spec:
+                parser.error(f"Invalid device specifier: {device_spec}")
+            device, resource = device_spec.split('=', maxsplit=1)
+            device_map[device] = resource
+
     connection = LXDConnection()
-    with Container(connection, args.IMAGE) as cont:
+    with Container(connection, args.IMAGE, device_map=device_map, strict=False, **kwargs) as cont:
         sys.exit(subprocess.call(['lxc', 'exec', cont.name, '/bin/sh']))
 
 

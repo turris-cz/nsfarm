@@ -1,5 +1,5 @@
 #!/bin/bash
-# nsfarm:base-alpine
+# nsfarm:base-alpine internet net:wan
 ##################################################################################
 # This is image used to boot medkit. It provides TFTP server with prepared image
 # for u-boot.
