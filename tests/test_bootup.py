@@ -6,6 +6,7 @@ import pytest
 from nsfarm.lxd import Container
 from nsfarm.cli import Shell
 from nsfarm.toolbox import service_is_running
+from . import mark
 
 
 @pytest.mark.deploy
@@ -19,8 +20,8 @@ def test_syslog_ng(client_board):
 @pytest.mark.parametrize("process", [
     "crond",
     "dnsmasq",
-    pytest.param("kresd", marks=pytest.mark.not_board("turris1x")),
-    pytest.param("unbound", marks=pytest.mark.board("turris1x")),
+    pytest.param("kresd", marks=mark.kresd),
+    pytest.param("unbound", marks=mark.unbound),
     "lighttpd",
     "mosquitto",
     "netifd",
@@ -57,8 +58,8 @@ basic_services = [
 
 @pytest.mark.deploy
 @pytest.mark.parametrize("service", basic_services + [
-    pytest.param("kresd", marks=pytest.mark.not_board("turris1x")),
-    pytest.param("unbound", marks=pytest.mark.board("turris1x")),
+    pytest.param("kresd", marks=mark.kresd),
+    pytest.param("unbound", marks=mark.unbound),
 ])
 def test_running_services(client_board, service):
     """Check that various essential services are running.
@@ -72,10 +73,10 @@ def test_running_services(client_board, service):
     "done",
     "gpio_switch",
     "led",
-    pytest.param("mox_autosetup", marks=pytest.mark.board("mox")),
-    pytest.param("rainbow", marks=pytest.mark.not_board("mox")),
+    pytest.param("mox_autosetup", marks=mark.only_mox),
+    pytest.param("rainbow", marks=mark.rainbow),
     "resolver",
-    pytest.param("setup_led", marks=pytest.mark.board("turris1x")),
+    pytest.param("setup_led", marks=mark.only_turris1x),
     "srv",
     "sysctl",
     "sysfixtime",
@@ -83,10 +84,10 @@ def test_running_services(client_board, service):
     "system",
     "ucitrack",
     "umount",
-    pytest.param("update_mac", marks=pytest.mark.board("turris1x")),
+    pytest.param("update_mac", marks=mark.only_turris1x),
     "updater-journal-recover",
     "urandom_seed",
-    pytest.param("zram", marks=pytest.mark.board("mox")),
+    pytest.param("zram", marks=mark.low_ram),
 ])
 def test_services(client_board, service):
     """Check that various essential services are enabled.

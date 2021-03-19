@@ -3,12 +3,13 @@ The backend is different depending on board but common crypto-wrapper unites the
 attribute access.
 """
 import pytest
+from . import mark
 
 
 @pytest.mark.deploy
 @pytest.mark.parametrize("hwtype", [
-    pytest.param("atsha", marks=pytest.mark.board("omnia", "turris1x")),
-    pytest.param("otp", marks=pytest.mark.board("mox")),
+    pytest.param("atsha", marks=mark.atsha),
+    pytest.param("otp", marks=mark.otp),
 ])
 def test_hw_type(hwtype, client_board):
     """Check if reported hardware type matches board.
