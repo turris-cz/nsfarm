@@ -12,7 +12,7 @@ class TestInternet(common.InternetTests):
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def client(self, basic_isp, lan1_client):
+    def client(self, board_wan, lan1_client):
         """With basic router config and client is client container.
         """
         shell = nsfarm.cli.Shell(lan1_client.pexpect())

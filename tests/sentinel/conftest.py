@@ -2,7 +2,7 @@ import pytest
 
 
 @pytest.fixture(scope="module", autouse=True)
-def fixture_sentinel(request, basic_isp, updater_branch,  client_board):
+def fixture_sentinel(request, board_wan, updater_branch,  client_board):
     """Set that we agree with Sentinel EULA.
     """
     client_board.run("uci add_list pkglists.pkglists.pkglist=datacollect && uci commit pkglists.pkglists")

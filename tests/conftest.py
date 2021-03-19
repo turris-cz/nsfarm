@@ -149,6 +149,14 @@ def fixture_client_board(board, board_serial, board_root_password, lan1_client):
 ########################################################################################################################
 # Common containers ####################################################################################################
 
+@pytest.fixture(name="isp_container", scope="module")
+def fixture_isp_container(lxd, device_map):
+    """Minimal ISP container used to provide the Internet access for the most of the tests.
+    """
+    with nsfarm.lxd.Container(lxd, 'isp-common', device_map) as container:
+        yield container
+
+
 @pytest.fixture(name="lan1_client", scope="module")
 def fixture_lan1_client(lxd, device_map):
     """Starts client container on LAN1 and provides it.
@@ -160,30 +168,29 @@ def fixture_lan1_client(lxd, device_map):
 ########################################################################################################################
 # Standard configuration ###############################################################################################
 
-@pytest.fixture(name="basic_isp", scope="module")
-def fixture_basic_isp(lxd, device_map, board, client_board):
-    """Basic config we consider general. It provides you with configured WAN.
-
-    Returns handle for ISP container on WAN interface.
+@pytest.fixture(name="board_wan", scope="module")
+def fixture_board_wan(board, client_board, isp_container):
+    """Basic config Internet configuration usable for most of the tests.
+    This configures static IP through ips_container.
+    Returns wan IPv4 address of WAN interface.
     """
-    # TODO what about other settings that are part of guide
-    with nsfarm.lxd.Container(lxd, 'isp-common', device_map) as container:
-        client_board.run("uci set network.wan.proto='static'")
-        client_board.run("uci set network.wan.ipaddr='172.16.1.42'")
-        client_board.run("uci set network.wan.netmask='255.240.0.0'")
-        client_board.run("uci set network.wan.gateway='172.16.1.1'")
-        client_board.run("uci set network.wan.dns='172.16.1.1'")
-        client_board.run("uci commit network")
-        client_board.run("/etc/init.d/network restart")
-        client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
-        time.sleep(3)  # Wait just a bit to ensure that network is up and running
-        yield container
-        client_board.run("uci set network.wan.proto='none'")
-        client_board.run("uci delete network.wan.ipaddr")
-        client_board.run("uci delete network.wan.netmask")
-        client_board.run("uci delete network.wan.gateway")
-        client_board.run("uci delete network.wan.dns")
-        client_board.run("uci commit network")
+    wan_ip = "172.16.1.142"
+    client_board.run("uci set network.wan.proto='static'")
+    client_board.run(f"uci set network.wan.ipaddr='{wan_ip}'")
+    client_board.run("uci set network.wan.netmask='255.240.0.0'")
+    client_board.run("uci set network.wan.gateway='172.16.1.1'")
+    client_board.run("uci set network.wan.dns='172.16.1.1'")  # TODO configure to ISP
+    client_board.run("uci commit network")
+    client_board.run("/etc/init.d/network restart")
+    client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
+    time.sleep(3)  # Wait just a bit to ensure that network is up and running
+    yield wan_ip
+    client_board.run("uci set network.wan.proto='none'")
+    client_board.run("uci delete network.wan.ipaddr")
+    client_board.run("uci delete network.wan.netmask")
+    client_board.run("uci delete network.wan.gateway")
+    client_board.run("uci delete network.wan.dns")
+    client_board.run("uci commit network")
 
 
 @pytest.fixture(name="updater_branch", scope="module")
