@@ -21,6 +21,9 @@ import typing
 import pexpect
 from . import mterm
 
+CTRL_C = '\x03'
+CTRL_D = '\x04'
+
 _FLUSH_BUFFLEN = 2048
 
 
@@ -169,7 +172,12 @@ class Shell(Cli):
     def ctrl_c(self):
         """Sends ^C character.
         """
-        self._sh.send('\x03')
+        self.send(CTRL_C)
+
+    def ctrl_d(self):
+        """Sends ^D character.
+        """
+        self.send(CTRL_D)
 
     def file_read(self, path):
         """Read file trough shell.
