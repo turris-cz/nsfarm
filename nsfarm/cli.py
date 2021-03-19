@@ -166,6 +166,11 @@ class Shell(Cli):
             raise Exception("Command probably won't fit to terminal. Split it or increase number of columns.")
         return super().command(cmd)
 
+    def ctrl_c(self):
+        """Sends ^C character.
+        """
+        self._sh.send('\x03')
+
     def file_read(self, path):
         """Read file trough shell.
 

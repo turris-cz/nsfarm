@@ -142,8 +142,7 @@ def fixture_client_board(board, board_serial, board_root_password, lan1_client):
     yield nsfarm.cli.Shell(pexp, flush=False)  # TODO drop this flush disable when it works
 
     board.set_serial_flush(False)
-    # Kill tail -f on serial console
-    board_serial.send('\x03')
+    board_serial.ctrl_c()  # Terminate tail -f on serial console
     board_serial.prompt()
 
 
