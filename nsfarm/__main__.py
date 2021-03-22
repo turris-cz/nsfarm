@@ -1,10 +1,30 @@
 import sys
 import argparse
+import logging
 from .lxd import __main__ as lxd
 from .target import __main__ as target
 
 
 def parser(parser):
+    parser.add_argument(
+        '-v', '--verbose',
+        default=0,
+        action='count',
+        help="Increase logging verbosity level."
+    )
+    parser.add_argument(
+        '-q', '--quiet',
+        default=0,
+        action='count',
+        help="Decrease logging verbosity level."
+    )
+    parser.add_argument(
+        "--log-level",
+        default=logging.INFO,
+        type=lambda x: getattr(logging, x),
+        help="Configure the logging level."
+    )
+
     subparsers = parser.add_subparsers(help="Utility to be used")
     ret = {None: parser}
 
@@ -20,6 +40,8 @@ def parser(parser):
 
 
 def handle_args(args, parser_ret):
+    logging.basicConfig(level=args.log_level + args.verbose - args.quiet)
+
     handles = {
         "lxd": lxd,
         "target": target,
