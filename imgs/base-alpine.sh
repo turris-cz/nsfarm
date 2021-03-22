@@ -7,13 +7,16 @@
 ##################################################################################
 set -e
 
-# Modify configuration for expected network setup of NSFarm
-sed -i 's/eth0/internet/g' /etc/network/interfaces
-
 # Make wait scripts executable
 for script in wait4boot wait4network; do
 	chmod +x "/bin/$script"
 done
+
+wait4boot
+
+# Modify configuration for expected network setup of NSFarm
+sed -i 's/eth0/internet/g' /etc/network/interfaces
+rc-service networking restart
 
 # Now extend system
 wait4network
