@@ -49,7 +49,7 @@ class Board(abc.ABC):
 
     def reset(self, state):
         """Set reset pin state."""
-        self._serial.rts = state
+        self._serial.rts = state if not self.config.reset_inverted else not state
 
     def uboot(self):
         """Ensures that board is booted to u-boot and ready to accept u-boot commands.
