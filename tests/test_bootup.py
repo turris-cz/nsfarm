@@ -93,3 +93,11 @@ def test_lighttpd(lan1_client):
     """
     pexp = Shell(lan1_client.pexpect())
     pexp.run("wget 192.168.1.1 && rm index.html")
+
+
+def test_no_wan(client_board):
+    """The router should not have WAN interface configured to any valid setting as we want to force users to first go
+    trough first setup guide and set password there.
+    """
+    client_board.run("uci get network.wan.proto")
+    assert client_board.output == "none"
