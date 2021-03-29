@@ -12,6 +12,7 @@ policy:
 
 filter:
     - { in: local, out: _fw, service: ping, action: accept }
+    - { in: local, out: _fw, service: dns, action: accept }
 
 snat:
     - out: internet
