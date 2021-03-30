@@ -1,0 +1,6 @@
+#!/bin/sh
+# This file is part of NSFarm
+# Call this script to block execution untill there is default route present.
+while ! ip route | grep -q default; do
+	sleep 1
+done

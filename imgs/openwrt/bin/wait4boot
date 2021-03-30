@@ -1,0 +1,16 @@
+#!/bin/sh
+# This file is part of NSFarm
+set -e
+
+# First we have to wait for ubus to start
+while ! pgrep -x /sbin/ubusd >/dev/null; do
+	sleep 1
+done
+
+# We have to wait for log to actually appear
+ubus wait_for log
+
+# Wait for procd to report completed init
+while ! logread | grep -qF 'procd: - init complete -'; do
+	sleep 1
+done

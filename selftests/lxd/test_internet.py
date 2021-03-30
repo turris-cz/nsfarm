@@ -7,10 +7,10 @@ from .test_image import BASE_IMG
 
 
 @pytest.fixture(scope="module")
-def container(connection):
+def container(lxd_connection):
     """Base container to be used for testing.
     """
-    with Container(connection, BASE_IMG, internet=True) as cont:
+    with Container(lxd_connection, BASE_IMG, internet=True) as cont:
         shell = Shell(cont.pexpect())
         shell.run("wait4network")
         yield shell
