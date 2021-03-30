@@ -11,6 +11,7 @@ from . import common
 # TODO: add support for IPV6, currently we only test IPv4
 
 
+@pytest.mark.deploy
 class TestStatic(common.InternetTests):
     """Test WAN with network settings configured statically.
     """
@@ -40,6 +41,7 @@ class TestStatic(common.InternetTests):
             client_board.run("uci commit network")
 
 
+@pytest.mark.deploy
 class TestDHCP(common.InternetTests):
     """Test WAN with network settings provided by DHCP server.
     """

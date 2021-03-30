@@ -3,6 +3,7 @@
 import pytest
 
 
+@pytest.mark.deploy
 def test_fw_printenv(client_board):
     """Check that we can access uboot environment.
     """

@@ -6,6 +6,7 @@ from . import common
 # pylint: disable=no-self-use
 
 
+@pytest.mark.deploy
 class TestInternet(common.InternetTests):
     """Test WAN with network settings configured statically.
     """

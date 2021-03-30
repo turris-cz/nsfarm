@@ -8,12 +8,14 @@ from nsfarm.cli import Shell
 from nsfarm.toolbox import service_is_running
 
 
+@pytest.mark.deploy
 def test_syslog_ng(client_board):
     """Check that syslog-ng is running by checking if there is /var/log/messages (default log output).
     """
     client_board.run("[ -f /var/log/messages ]")
 
 
+@pytest.mark.deploy
 @pytest.mark.parametrize("process", [
     "crond",
     "dnsmasq",
@@ -53,6 +55,7 @@ basic_services = [
 ]
 
 
+@pytest.mark.deploy
 @pytest.mark.parametrize("service", basic_services + [
     pytest.param("kresd", marks=pytest.mark.not_board("turris1x")),
     pytest.param("unbound", marks=pytest.mark.board("turris1x")),
@@ -63,6 +66,7 @@ def test_running_services(client_board, service):
     assert service_is_running(service, client_board)
 
 
+@pytest.mark.deploy
 @pytest.mark.parametrize("service", basic_services + [
     "boot",
     "done",
@@ -90,6 +94,7 @@ def test_services(client_board, service):
     client_board.run(f"/etc/init.d/{service} enabled")
 
 
+@pytest.mark.deploy
 def test_lighttpd(lan1_client):
     """Test that there is access to router interface.
     """
@@ -97,6 +102,7 @@ def test_lighttpd(lan1_client):
     pexp.run("wget 192.168.1.1 && rm index.html")
 
 
+@pytest.mark.deploy
 def test_no_wan(client_board):
     """Wan interface should be in default configured to none and thus disabled.
     """

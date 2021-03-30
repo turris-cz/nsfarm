@@ -5,6 +5,7 @@ attribute access.
 import pytest
 
 
+@pytest.mark.deploy
 @pytest.mark.parametrize("hwtype", [
     pytest.param("atsha", marks=pytest.mark.board("omnia", "turris1x")),
     pytest.param("otp", marks=pytest.mark.board("mox")),
@@ -16,6 +17,7 @@ def test_hw_type(hwtype, client_board):
     assert client_board.output == hwtype
 
 
+@pytest.mark.deploy
 def test_serial_number(request, client_board):
     """Check that syslog-ng is running by checking if there is /var/log/messages (default log output).
     """
