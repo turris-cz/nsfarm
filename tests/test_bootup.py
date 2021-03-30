@@ -1,9 +1,11 @@
 """These are test that check that everything we need is running after boot. This does simple and quick tests to catch
 general errors such as disabled core services.
 """
+import time
 import pytest
-from nsfarm.toolbox import service_is_running
+from nsfarm.lxd import Container
 from nsfarm.cli import Shell
+from nsfarm.toolbox import service_is_running
 
 
 def test_syslog_ng(client_board):
@@ -96,8 +98,34 @@ def test_lighttpd(lan1_client):
 
 
 def test_no_wan(client_board):
-    """The router should not have WAN interface configured to any valid setting as we want to force users to first go
-    trough first setup guide and set password there.
+    """Wan interface should be in default configured to none and thus disabled.
     """
     client_board.run("uci get network.wan.proto")
     assert client_board.output == "none"
+
+
+class TestNoInternetAccess:
+    """The router should not have WAN interface configured to any valid setting as we want to force users to first go
+    through first setup guide and set password there.
+    """
+
+    @pytest.fixture(scope="class", autouse=True)
+    def fixture_dhcp_isp(self, lxd, wan, client_board):
+        """This provides DHCP server on WAN interface the router could use to autoconfigure WAN if it would want to.
+        """
+        with Container(lxd, "isp-dhcp", devices=[wan, ]) as container:
+            Shell(container.pexpect()).run("wait4network")
+            client_board.run("/etc/init.d/network restart")  # Trigger network restart to force potential renew now
+            # Unfortunatelly we can't wait for router to pickup address as technically it should not. Instead we wait
+            # some amount of time we can expect it would picked up address from DHCP.
+            time.sleep(10)
+            yield container
+
+    @pytest.mark.parametrize("ipv", ["4", "6"])
+    def test_no_internet_access(self, client_board, ipv):
+        """Although test_no_wan checks if wan is not configured it does not mean that some automatic function might not
+        configure WAN. This checks that we really do not have the Internet access.
+        It is reasonable assumption that without default route there is no Internet access so it should be enough to
+        check if there is no default route.
+        """
+        assert client_board.run(f"ip -{ipv} route | grep -F 'default via'", None) == 1
