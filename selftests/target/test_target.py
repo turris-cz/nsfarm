@@ -19,5 +19,5 @@ def test_network_up(target, interface):
     if not target.is_configured(interface):
         pytest.skip(f"Interface '{interface}' is not configured for this target.")
     pth = Path("/sys/class/net")
-    with open(pth / target.device_map()[f"net:{interface}"] / "carrier", "r") as file:
-        assert file.readline() == "1\n"
+    with open(pth / target.device_map()[f"net:{interface}"] / "flags", "r") as file:
+        assert int(file.readline(), base=16) & 0x1
