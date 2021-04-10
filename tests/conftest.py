@@ -8,14 +8,10 @@ import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
 import nsfarm.target
+from . import mark
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "-T", "--target",
-        help="Run tests on specified TARGET.",
-        metavar="TARGET",
-    )
     parser.addoption(
         "--board",
         help="Run tests on one of the targets with given BOARD unless exact target is specified.",
@@ -30,15 +26,16 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    # Set target configuration
-    target_name = config.getoption("-T")
-    if target_name is None:
+    mark.register_marks(config)
+    # Select target configuration unless explicitly specified from top level conftest
+    if config.target_config is None:
         try:
-            target_name = next(config.targets.filter(board=config.getoption("--board")))
+            # If there was no target selection then we chose one
+            # Note: We can run tests only on one target. This way we force selftests to run on our target only.
+            setattr(config, "target_config", config.targets[next(
+                config.targets.filter(board=config.getoption("--board")))])
         except StopIteration:
             pass
-    if target_name is not None:  # Targets might not be set for example with --help argument
-        setattr(config, "target_config", config.targets[target_name])
     # Set target branch
     branch = config.getoption("-B")
     setattr(config, "target_branch", branch)
@@ -46,7 +43,7 @@ def pytest_configure(config):
     # Store configuration to metadata (basically just for pytest-html)
     if hasattr(config, '_metadata'):
         config._metadata.update({
-            'NSFarm-Target': target_name,
+            'NSFarm-Target': config.target_config.name,
             'NSFarm-TurrisBranch': branch,
         })
 

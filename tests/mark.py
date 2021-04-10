@@ -3,6 +3,11 @@ name.
 """
 import pytest
 
+MARKERS = [
+    "lan1: requirement of lan1 ethernet connection to board",
+    "lan2: requirement of lan2 ethernet connection to board",
+]
+
 # Exclusive for boards
 only_turris1x = pytest.mark.board("turris1x")
 only_omnia = pytest.mark.board("omnia")
@@ -20,3 +25,10 @@ rainbow = pytest.mark.board("omnia", "turrix1x")
 low_ram = pytest.mark.board("mox")
 atsha = pytest.mark.board("omnia", "turrix1x")
 otp = pytest.mark.board("mox")
+
+
+def register_marks(config):
+    """Registers all tests specific markers.
+    """
+    for mark in MARKERS:
+        config.addinivalue_line("markers", mark)
