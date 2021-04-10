@@ -18,7 +18,7 @@ You need following software and its dependencies:
 * pyserial
 * pylxd
 
-You can install all Python libraries using `pip install -r requirements.txt`. It
+You can install all Python libraries using `pip3 install -r requirements.txt`. It
 is suggested to either install them to system or to use `virtualenv`.
 
 You should also make sure that LXD is up and running on your system and is
