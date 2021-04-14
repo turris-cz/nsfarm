@@ -16,7 +16,7 @@ class Omnia(Board):
 
     @property
     def wan(self):
-        return "eth0"
+        return "eth2"
 
     @property
     def lan1(self):
