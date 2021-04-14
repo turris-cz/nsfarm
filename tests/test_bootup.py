@@ -117,10 +117,10 @@ class TestNoInternetAccess:
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def fixture_dhcp_isp(self, lxd, wan, client_board):
+    def fixture_dhcp_isp(self, lxd, device_map, client_board):
         """This provides DHCP server on WAN interface the router could use to autoconfigure WAN if it would want to.
         """
-        with Container(lxd, "isp-dhcp", devices=[wan, ]) as container:
+        with Container(lxd, "isp-dhcp", device_map) as container:
             Shell(container.pexpect()).run("wait4network")
             client_board.run("/etc/init.d/network restart")  # Trigger network restart to force potential renew now
             # Unfortunatelly we can't wait for router to pickup address as technically it should not. Instead we wait
