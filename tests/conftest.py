@@ -139,7 +139,7 @@ def fixture_client_board(board, board_serial, board_root_password, lan1_client):
     pexp.expect_exact("root@192.168.1.1's password:")
     pexp.sendline(board_root_password)
     pexp.expect_exact("root@turris:")
-    yield nsfarm.cli.Shell(pexp, flush=False)  # TODO drop this flush disable when it works
+    yield nsfarm.cli.Shell(pexp)
 
     board.set_serial_flush(False)
     board_serial.ctrl_c()  # Terminate tail -f on serial console
@@ -179,7 +179,7 @@ def fixture_board_wan(board, client_board, isp_container):
     client_board.run(f"uci set network.wan.ipaddr='{wan_ip}'")
     client_board.run("uci set network.wan.netmask='255.240.0.0'")
     client_board.run("uci set network.wan.gateway='172.16.1.1'")
-    client_board.run("uci set network.wan.dns='172.16.1.1'")  # TODO configure to ISP
+    client_board.run("uci set network.wan.dns='172.16.1.1'")
     client_board.run("uci commit network")
     client_board.run("/etc/init.d/network restart")
     client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
