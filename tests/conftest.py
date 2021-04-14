@@ -154,6 +154,7 @@ def fixture_isp_container(lxd, device_map):
     """Minimal ISP container used to provide the Internet access for the most of the tests.
     """
     with nsfarm.lxd.Container(lxd, 'isp-common', device_map) as container:
+        nsfarm.cli.Shell(container.pexpect()).run('wait4network')
         yield container
 
 
@@ -162,6 +163,7 @@ def fixture_lan1_client(lxd, device_map):
     """Starts client container on LAN1 and provides it.
     """
     with nsfarm.lxd.Container(lxd, 'client', {"net:lan": device_map["net:lan1"]}) as container:
+        nsfarm.cli.Shell(container.pexpect()).run('wait4boot')
         yield container
 
 

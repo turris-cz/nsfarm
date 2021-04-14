@@ -21,7 +21,7 @@ class TestStatic(common.InternetTests):
         """Configure WAN to use static IP
         """
         print("We are in client fixture once")
-        with nsfarm.lxd.Container(lxd, 'isp-common', device_map):
+        with nsfarm.lxd.Container(lxd, 'isp-common', device_map) as container:
             # TODO implement some utility class to set and revert uci configs on router
             client_board.run("uci set network.wan.proto='static'")
             client_board.run("uci set network.wan.ipaddr='172.16.1.42'")
@@ -29,6 +29,7 @@ class TestStatic(common.InternetTests):
             client_board.run("uci set network.wan.gateway='172.16.1.1'")
             client_board.run("uci set network.wan.dns='172.16.1.1'")
             client_board.run("uci commit network")
+            nsfarm.cli.Shell(container.pexpect()).run('wait4network')
             client_board.run("/etc/init.d/network restart")
             client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
             time.sleep(3)  # Wait just a bit to ensure that network is up and running
@@ -50,9 +51,10 @@ class TestDHCP(common.InternetTests):
     def client(self, lxd, device_map, board, client_board):
         """Configure WAN to use DHCP
         """
-        with nsfarm.lxd.Container(lxd, 'isp-dhcp', device_map):
+        with nsfarm.lxd.Container(lxd, 'isp-dhcp', device_map) as container:
             client_board.run("uci set network.wan.proto='dhcp'")
             client_board.run("uci commit network")
+            nsfarm.cli.Shell(container.pexpect()).run('wait4network')
             client_board.run("/etc/init.d/network restart")
             client_board.run("while ! ip route | grep -q default; do sleep 1; done")
             time.sleep(1)  # Wait just a bit to ensure that network is up and running
