@@ -171,7 +171,7 @@ def fixture_lan1_client(lxd, device_map):
 # Standard configuration ###############################################################################################
 
 @pytest.fixture(name="board_wan", scope="module")
-def fixture_board_wan(board, client_board, isp_container):
+def fixture_board_wan(client_board, isp_container):
     """Basic config Internet configuration usable for most of the tests.
     This configures static IP through ips_container.
     Returns wan IPv4 address of WAN interface.
@@ -184,8 +184,7 @@ def fixture_board_wan(board, client_board, isp_container):
     client_board.run("uci set network.wan.dns='172.16.1.1'")
     client_board.run("uci commit network")
     client_board.run("/etc/init.d/network restart")
-    client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
-    time.sleep(3)  # Wait just a bit to ensure that network is up and running
+    client_board.run("while ! ping -c1 -w1 172.16.1.1 >/dev/null; do true; done")
     yield wan_ip
     client_board.run("uci set network.wan.proto='none'")
     client_board.run("uci delete network.wan.ipaddr")

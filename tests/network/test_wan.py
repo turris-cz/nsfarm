@@ -17,7 +17,7 @@ class TestStatic(common.InternetTests):
     """
 
     @pytest.fixture(scope="class", autouse=True)
-    def client(self, lxd, device_map, board, client_board):
+    def client(self, lxd, device_map, client_board):
         """Configure WAN to use static IP
         """
         print("We are in client fixture once")
@@ -31,8 +31,7 @@ class TestStatic(common.InternetTests):
             client_board.run("uci commit network")
             nsfarm.cli.Shell(container.pexpect()).run('wait4network')
             client_board.run("/etc/init.d/network restart")
-            client_board.run(f"while ! ip link show {board.wan} | grep -q ' state UP '; do sleep 1; done")
-            time.sleep(3)  # Wait just a bit to ensure that network is up and running
+            client_board.run("while ! ping -c1 -w1 172.16.1.1 >/dev/null; do true; done")
             yield client_board
             client_board.run("uci set network.wan.proto='none'")
             client_board.run("uci delete network.wan.ipaddr")
@@ -57,7 +56,6 @@ class TestDHCP(common.InternetTests):
             nsfarm.cli.Shell(container.pexpect()).run('wait4network')
             client_board.run("/etc/init.d/network restart")
             client_board.run("while ! ip route | grep -q default; do sleep 1; done")
-            time.sleep(1)  # Wait just a bit to ensure that network is up and running
             yield client_board
             client_board.run("uci set network.wan.proto='none'")
             client_board.run("uci commit network")
