@@ -179,27 +179,53 @@ class Shell(Cli):
         """
         self.send(CTRL_D)
 
-    def file_read(self, path):
-        """Read file trough shell.
+    def txt_read(self, path):
+        """Read text file via shell.
+
+        path: path to text file to read
+
+        Returns string containing text of the file
+        """
+        self.run(f"cat '{path}'")
+        return self.output
+
+    def txt_write(self, path, content):
+        """Write text file via shell.
+        
+        Note that parent directory has to exist and any file will be rewritten.
+
+        path: path to be written to
+        content: string with data to be written to text file.
+        """
+        self.sendline(f"cat > '{path}'")
+        self.sendline(content)
+        self.sendeof()
+        if self.prompt() != 0:
+            raise Exception(f"Writing file failed with exit code: {self.prompt()}")
+
+    def bin_read(self, path):
+        """Read binary file via shell encoded in base64.
 
         path: path to file to read
 
-        This returns bytes with content of file from path.
+        Returns bytes with content of binary file from the path.
         """
-        self._sh.run(f"base64 '{path}'")
-        return base64.b64decode(self._sh.output())
+        self.run(f"base64 '{path}'")
+        return base64.b64decode(self.output)
 
-    def file_write(self, path, content):
-        """Write given content to file on path. Note that parent directory has to exists.
+    def bin_write(self, path, content):
+        """Write given bytes to binary file in path.
+        
+        Note that parent directory has to exist and any file will be rewritten.
 
-        path: path to file to be written
-        content: bytes to be written to it
+        path: path to file to be written.
+        content: bytes to be written to binary file.
         """
-        self._sh.sendline(f"base64 --decode > '{path}'")
-        self._sh.sendline(base64.b64encode(content))
-        self._sh.sendeof()
-        if self._sh.prompt() != 0:
-            raise Exception(f"Writing file failed with exit code: {self._sh.prompt()}")
+        self.sendline(f"base64 -d > '{path}'")
+        self.sendline(base64.b64encode(content))
+        self.sendeof()
+        if self.prompt() != 0:
+            raise Exception(f"Writing file failed with exit code: {self.prompt()}")
 
     @property
     def output(self):
