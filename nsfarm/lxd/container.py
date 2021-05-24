@@ -107,9 +107,14 @@ class Container:
         return pexp
 
     def get_ip(self,
-               interfaces: typing.Union[list, tuple] = None,
-               versions: typing.Union[list, tuple] = frozenset([4, 6])) -> list:
+               interfaces: typing.Optional[typing.Container] = None,
+               versions: typing.Container = frozenset([4, 6])) -> list:
         """returns list of ipaddress.IP#Interface filtered according to parameters.
+
+        interfaces: Container containing string names of interfaces from which ip addresses will be obtained
+        versions: Container containing integer values of IP versions to be obtained
+
+        Returns a list of ip addresses as IPv4Address or IPv6Address classes
         """
         ips = []
         ifs_dict = self.network.addresses

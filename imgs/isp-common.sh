@@ -27,10 +27,8 @@ rc-update add named
 chown :named /etc/bind
 chmod a+r /etc/bind/named.conf
 
-## Additonal service
-# iperf3 for benchmarking tests
-apk add iperf3 iperf3-openrc
-rc-update add iperf3 default
+## Additonal programs
+apk add iperf3
 
 ## Configure WAN interface of router
 cat >> /etc/network/interfaces <<EOF

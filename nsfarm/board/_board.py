@@ -24,6 +24,8 @@ class Board(abc.ABC):
         self._pexpect = fdpexpect.fdspawn(self._fdlogging.socket)
         # Set board to some known state
         self.reset(True)  # Hold in reset state
+        # Set default baord constants for testing
+        self.min_eth_throughput = 400  # Mbps
 
     @property
     def pexpect(self):
