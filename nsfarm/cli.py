@@ -191,7 +191,7 @@ class Shell(Cli):
 
     def txt_write(self, path, content):
         """Write text file via shell.
-        
+
         Note that parent directory has to exist and any file will be rewritten.
 
         path: path to be written to
@@ -215,7 +215,7 @@ class Shell(Cli):
 
     def bin_write(self, path, content):
         """Write given bytes to binary file in path.
-        
+
         Note that parent directory has to exist and any file will be rewritten.
 
         path: path to file to be written.

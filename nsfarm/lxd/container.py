@@ -4,13 +4,16 @@ import os
 import typing
 import logging
 import pexpect
-import itertools
+import functools
+import typing
 import warnings
+import ipaddress
 from .. import cli
 from .connection import LXDConnection
 from .image import Image
 from .device import Device
 from .exceptions import LXDDeviceError
+from .network import NetworkInterface
 
 logger = logging.getLogger(__package__)
 
@@ -28,6 +31,7 @@ class Container:
         self._override_wants_internet = internet
         self._strict = strict
         self._devices = dict()
+        self._network = None
 
         self._image = image if isinstance(image, Image) else Image(lxd_connection, image)
         self._logger = logging.getLogger(f"{__package__}[{self._image.name}]")
@@ -68,6 +72,8 @@ class Container:
             },
         }, wait=True)
         self.lxd_container.start(wait=True)
+        # Added LXD network class
+        self._network = NetworkInterface(self)
         logger.debug("Container prepared: %s", self.lxd_container.name)
 
     def _container_name(self, prefix="nsfarm"):
@@ -99,6 +105,19 @@ class Container:
         pexp = pexpect.spawn('lxc', ["exec", self.lxd_container.name] + list(command))
         pexp.logfile_read = cli.PexpectLogging(logging.getLogger(self._logger.name + str(command)))
         return pexp
+
+    def get_ip(self,
+               interfaces: typing.Union[list, tuple] = None,
+               versions: typing.Union[list, tuple] = frozenset([4, 6])) -> list:
+        """returns list of ipaddress.IP#Interface filtered according to parameters.
+        """
+        ips = []
+        ifs_dict = self.network.addresses
+        for iface in interfaces if interfaces else self.network.interfaces:
+            for address in ifs_dict[iface]:
+                if address.version in versions:
+                    ips.append(address)
+        return ips
 
     def __enter__(self):
         self.prepare()
@@ -135,3 +154,9 @@ class Container:
         """Dict of passed devices from host.
         """
         return self._devices
+
+    @property
+    def network(self) -> dict:
+        """network representation, that represents all data connections.
+        """
+        return self._network
