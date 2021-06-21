@@ -7,10 +7,12 @@
 ##################################################################################
 set -e
 
-# Make wait scripts executable
+# Make wait and init scripts executable
 for script in wait4boot wait4network; do
 	chmod +x "/bin/$script"
 done
+chmod +x "/etc/init.d/devshm"
+rc-update add devshm boot
 
 wait4boot
 

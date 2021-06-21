@@ -1,0 +1,6 @@
+#!/sbin/openrc-run
+
+start() {
+	mkdir -p /dev/shm
+	mount -n -t tmpfs -o noexec,nosuid,nodev,mode=1777 shm /dev/shm
+}
