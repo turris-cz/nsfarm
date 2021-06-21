@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+command=/usr/bin/x11vnc
+command_args="-localhost -shared -forever -display :0"
+supervisor="supervise-daemon"
+supervise_daemon_args="-u webdriver"
+command_background="yes"
+
+depend() {
+	need localmount net xvfb
+	use logger
+}

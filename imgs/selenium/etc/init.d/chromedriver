@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+command=/usr/bin/chromedriver
+command_args="--port=9515"
+supervisor="supervise-daemon"
+supervise_daemon_args="-e 'DISPLAY=:0' -u webdriver"
+
+depend() {
+	need localmount net
+	use logger
+}

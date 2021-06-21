@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+command=/usr/bin/Xvfb
+command_args=":0 -screen 0 1366x768x24"
+supervisor="supervise-daemon"
+supervise_daemon_args="-u webdriver"
+
+depend() {
+	need localmount net
+	use logger
+}

@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+command=/usr/bin/geckodriver
+command_args="--port 4444"
+supervisor="supervise-daemon"
+supervise_daemon_args="-e 'DISPLAY=:0' -u webdriver"
+
+depend() {
+	need localmount net
+	use logger
+}
