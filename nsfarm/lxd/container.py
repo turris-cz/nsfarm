@@ -3,11 +3,8 @@
 import os
 import typing
 import logging
-import pexpect
-import functools
-import typing
 import warnings
-import ipaddress
+import pexpect
 from .. import cli
 from .connection import LXDConnection
 from .image import Image
@@ -26,7 +23,6 @@ class Container:
     def __init__(self, lxd_connection: LXDConnection, image: typing.Union[str, Image], device_map: dict = None,
                  internet: typing.Optional[bool] = None, strict: bool = True):
         self._lxd = lxd_connection
-        self._internet = False
         self._device_map = device_map
         self._override_wants_internet = internet
         self._strict = strict
@@ -135,9 +131,7 @@ class Container:
     def name(self) -> typing.Union[str, None]:
         """Name of container if prepared, otherwise None.
         """
-        if self.lxd_container is None:
-            return None
-        return self.lxd_container.name
+        return self.lxd_container.name if self.lxd_container is not None else None
 
     @property
     def image(self) -> Image:

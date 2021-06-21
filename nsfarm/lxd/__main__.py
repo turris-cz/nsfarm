@@ -60,6 +60,13 @@ def parser(parser):
         device specification from image and RESOURCE is resource mapped to it.
         """
     )
+    inspect.add_argument(
+        '-p', '--proxy',
+        action='append',
+        help="""Adds socket to be proxied to host. The argument has to be proto:address:port, for example:
+        tcp:127.0.0.1:80. The port this is forwarded to is printed on to the terminal when container is started.
+        """
+    )
 
     return {
         None: parser,
@@ -129,6 +136,17 @@ def op_inspect(args, parser):
 
     connection = LXDConnection()
     with Container(connection, args.IMAGE, device_map=device_map, strict=False, **kwargs) as cont:
+        if args.proxy:
+            for proxy in args.proxy:
+                el = proxy.split(':', maxsplit=2)
+                if len(el) == 1:
+                    args = {"port": el[0]}
+                elif len(el) == 2:
+                    args = {"address": el[0], "port": el[1]}
+                else:
+                    args = {"proto": el[0], "address": el[1], "port": el[2]}
+                localport = cont.network.proxy_open(**args)
+                print(f"Proxy '{proxy}' to: {localport}")
         sys.exit(subprocess.call(['lxc', 'exec', cont.name, '/bin/sh']))
 
 
