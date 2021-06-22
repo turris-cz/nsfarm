@@ -86,7 +86,7 @@ class Board(abc.ABC):
             uboot.run('setenv serverip 192.168.1.1')
             self._board_bootup(uboot)
         # Wait for bootup
-        self._pexpect.expect_exact(["Router Turris successfully started.", ], timeout=120)
+        self._pexpect.expect_exact(["Router Turris successfully started.", ], timeout=240)
         # Note Shell sends new line which opens terminal for it
         shell = cli.Shell(self._pexpect)
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
