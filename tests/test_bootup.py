@@ -34,7 +34,7 @@ def test_syslog_ng(client_board):
 def test_processes(client_board, process):
     """Check that various essential processes are running.
     """
-    client_board.run(f"pgrep -x '{process}' || pgrep -x \"$(which '{process}')\"")
+    client_board.run(f"pgrep -x '{process}' || pgrep -a \"$(which '{process}')\"")
 
 
 basic_services = [
