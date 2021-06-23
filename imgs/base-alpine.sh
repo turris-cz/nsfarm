@@ -8,7 +8,7 @@
 set -e
 
 # Make wait and init scripts executable
-for script in wait4boot wait4network; do
+for script in wait4boot wait4network wait4tcp; do
 	chmod +x "/bin/$script"
 done
 chmod +x "/etc/init.d/devshm"

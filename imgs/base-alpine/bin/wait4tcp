@@ -1,0 +1,10 @@
+#!/bin/sh
+# This file is part of NSFarm
+# Call this script to block execution untill there is something listening on ports
+# passed as arguments.
+# This checks for IPv4 only.
+for port in "$@"; do
+	while ! nc -z "127.0.0.1:$port"; do
+		sleep 0.1;
+	done
+done

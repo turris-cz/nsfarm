@@ -62,26 +62,28 @@ class NetworkInterface():
         """
         assert self._container.lxd_container is not None
         freeport = _find_free_port(proto)
+        self._container._logger.debug("Opening proxy to %s:%s:%d on port: %d", proto, address, port, freeport)
         self._container.lxd_container.devices[f"proxy-{proto}-{freeport}"] = {
             "connect": f"{proto}:{address}:{port}",
             "listen": f"{proto}:127.0.0.1:{freeport}",
             "type": "proxy"
         }
-        self._container.lxd_container.save()
+        self._container.lxd_container.save(wait=True)
         return freeport
 
     def proxy_close(self, localport, proto="tcp"):
         """Close existing proxy.
         """
+        self._container._logger.debug("Closing proxy %s port: %d", proto, localport)
         del self._container.lxd_container.devices[f"proxy-{proto}-{localport}"]
-        self._container.lxd_container.save()
+        self._container.lxd_container.save(wait=True)
 
     @contextlib.contextmanager
-    def proxy(self, **args):
+    def proxy(self, *args, **kwargs):
         """Open proxy for limited context.
         This is using proxy_open and proxy_close.
         """
-        port = self.proxy_open(**args)
+        port = self.proxy_open(*args, **kwargs)
         try:
             yield port
         finally:

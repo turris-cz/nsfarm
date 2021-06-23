@@ -4,6 +4,7 @@ import os
 import typing
 import logging
 import warnings
+import functools
 import pexpect
 from .. import cli
 from .connection import LXDConnection
@@ -101,6 +102,16 @@ class Container:
         pexp = pexpect.spawn('lxc', ["exec", self.lxd_container.name] + list(command))
         pexp.logfile_read = cli.PexpectLogging(logging.getLogger(self._logger.name + str(command)))
         return pexp
+
+    @property
+    @functools.lru_cache
+    def shell(self):
+        """Extension method that provies access to shell in container.
+        It caches result so after first call it always returns same instance of Shell.
+        This is intended mostly as easy to reach system console. The prefered way of performing tests trough container
+        is using pexpect() method as that spawns multiple separate shell instances.
+        """
+        return cli.Shell(self.pexpect())
 
     def get_ip(self,
                interfaces: typing.Optional[typing.Container] = None,

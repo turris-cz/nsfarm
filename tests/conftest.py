@@ -43,7 +43,7 @@ def pytest_configure(config):
     # Store configuration to metadata (basically just for pytest-html)
     if hasattr(config, '_metadata'):
         config._metadata.update({
-            'NSFarm-Target': config.target_config.name,
+            'NSFarm-Target': config.target_config.name if config.target_config else None,
             'NSFarm-TurrisBranch': branch,
         })
 
