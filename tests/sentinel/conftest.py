@@ -25,7 +25,7 @@ def fixture_attacker_container(lxd, device_map):
     intentional as this way we won't poison data that much even if we send them to Sentinel network.
     """
     with Container(lxd, 'attacker', device_map) as container:
-        Shell(container.pexpect()).run('wait4boot')
+        container.shell.run('wait4boot')
         yield container
 
 
