@@ -85,13 +85,13 @@ class Image:
         self._md5sum_update_file(md5sum, self._file_path)
         # Additional nodes from directory
         if self._dir_path:
-            nodes = [path for path in self._dir_path.iterdir()]
+            nodes = list(self._dir_path.iterdir())
             while nodes:
                 node = nodes.pop()
                 path = self._dir_path / node
-                md5sum.update(str(node).encode())
+                md5sum.update(str(node.relative_to(self.IMGS_DIR)).encode())
                 if path.is_dir():
-                    nodes += [path for path in node.iterdir()]
+                    nodes += list(node.iterdir())
                 elif path.is_file():
                     # For plain file include content
                     self._md5sum_update_file(md5sum, path)
