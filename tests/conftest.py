@@ -191,6 +191,11 @@ def fixture_board_wan(client_board, isp_container):
     client_board.run("uci commit network")
 
 
+PUB_TEST_KEY = """untrusted comment: Turris OS devel key
+RWS0FA1Nun7JDt0L8SjRsDRJGDvUCdDdfs21feiW+qpGHNMhVZ930hky
+"""
+
+
 @pytest.fixture(name="updater_branch", scope="module")
 def fixture_updater_branch(request, client_board):
     """Setup target branch to updater.
@@ -198,13 +203,8 @@ def fixture_updater_branch(request, client_board):
     """
     if request.config.target_branch == "hbk":
         # HBK needs special tweak as these medkits do not contain test key but repository is signed with it.
-        client_board.run("opkg update")
-        # TODO: We do not install package using opkg because of this open bug:
-        # https://gitlab.nic.cz/turris/updater/updater/-/issues/311
-        client_board.run("opkg download cznic-repo-keys-test")
-        client_board.run("pkgtransaction -a cznic-repo-keys-test_*.ipk || true")
-        # TODO: Install of cznic-repo-keys-test reports error as cert-backup does not work in systems running from RAM
-        client_board.run("rm -f cznic-repo-keys-test_*.ipk")
+        # WARNING we do not remove this file
+        client_board.txt_write("/etc/updater/keys/test.pub", PUB_TEST_KEY)
     client_board.run(
         f"uci set updater.turris.branch='{request.config.target_branch}' && uci commit updater.turris.branch")
     yield request.config.target_branch
