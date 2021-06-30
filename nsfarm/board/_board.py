@@ -20,7 +20,7 @@ class Board(abc.ABC):
         self.config = target_config
         # Open serial console to board
         self._serial = serial.Serial(self.config.serial, 115200)
-        self._fdlogging = cli.FDLogging(self._serial, logging.getLogger(f"{__package__}[{target_config.name}]"))
+        self._fdlogging = cli.FDLogging(self._serial, logging.getLogger(__package__))
         self._pexpect = fdpexpect.fdspawn(self._fdlogging.socket)
         # Set board to some known state
         self.reset(True)  # Hold in reset state
