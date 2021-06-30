@@ -24,7 +24,7 @@ rc-update add xvfb
 rc-update add x11vnc
 
 # Firefox
-apk add firefox gcompat tar
+apk add firefox-esr gcompat tar
 wget "$GECKODRIVER_URL" -O - | tar -xzf - -C /usr/bin geckodriver
 rc-update add geckodriver
 
