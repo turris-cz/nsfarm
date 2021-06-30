@@ -308,10 +308,10 @@ class FDLogging:
     def __del__(self):
         self.close()
 
-    def _log_line(self, line, level):
-        self._logger.log(level, repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
+    def _log_line(self, prefix, line, level):
+        self._logger.log(level, prefix + repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
 
-    def _log(self, prev_data, new_data, level):
+    def _log(self, prev_data, new_data, level, prefix):
         data = prev_data + new_data
         lines = data.splitlines(keepends=True)
         if not lines:
@@ -319,7 +319,7 @@ class FDLogging:
         # The last line does not have to be terminated (no new line character) so just preserve it
         reminder = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b''
         for line in lines:
-            self._log_line(line, level)
+            self._log_line(prefix, line, level)
         return reminder
 
     def _thread_func(self):
@@ -335,6 +335,10 @@ class FDLogging:
             self._fileno: self._our_sock.fileno(),
             self._our_sock.fileno(): self._fileno,
         }
+        prefix = {
+            self._fileno: '< ',
+            self._our_sock.fileno(): '> '
+        }
 
         poll = select.poll()
         poll.register(self._fileno, select.POLLIN)
@@ -347,7 +351,7 @@ class FDLogging:
                 new_data = os.read(fileno, io.DEFAULT_BUFFER_SIZE)
                 if fileno != self._fileno or self._propagate:
                     os.write(output[fileno], new_data)
-                data[fileno] = self._log(data[fileno], new_data, level[fileno])
+                data[fileno] = self._log(data[fileno], new_data, level[fileno], prefix[fileno])
 
 
 class PexpectLogging:
