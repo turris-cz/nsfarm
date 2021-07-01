@@ -63,21 +63,21 @@ class Cli(abc.ABC):
         return getattr(self._pe, name)
 
     @abc.abstractmethod
-    def prompt(self, **kwargs):
+    def prompt(self, **kwargs) -> int:
         """Follow output until prompt is reached and parse it.  Exit code is returned.
         All keyword arguments are passed to pexpect's expect call.
         """
 
     @property
     @abc.abstractmethod
-    def output(self):
+    def output(self) -> str:
         """All output before latest prompt.
 
         This is everything not matched till prompt is located.  Note that this is for some implementations same as
         pexpect before but in others it can differ so you should always use this property instead of before.
         """
 
-    def command(self, cmd=""):
+    def command(self, cmd: str = ""):
         """Calls pexpect sendline and expect cmd with trailing new line.
 
         This is handy when you are communicating with console that echoes input back. This effectively removes sent
@@ -89,9 +89,9 @@ class Cli(abc.ABC):
         self.expect_exact(cmd)
         self.expect_exact(["\r\n", "\n\r"])
 
-    def run(self, cmd: typing.Optional[str] = "",
+    def run(self, cmd: str = "",
             exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero,
-            **kwargs):
+            **kwargs) -> typing.Any:
         """Run given command and follow output until prompt is reached and return exit code with optional automatic
         check. This is same as if you would call cmd() and prompt() while checking exit_code.
 
@@ -105,7 +105,7 @@ class Cli(abc.ABC):
         ecode = self.prompt(**kwargs)
         return ecode if exit_code is None else exit_code(ecode)
 
-    def match(self, index):
+    def match(self, index: int) -> str:
         """Returns located match in previously matched output.
         """
         return self._pe.match.group(index).decode()
@@ -118,7 +118,7 @@ class Cli(abc.ABC):
         """
         pexpect_flush(self._pe)
 
-    def mterm(self, new_prompt=True):
+    def mterm(self, new_prompt: bool = True):
         """Runs interactive terminal on this cli.
 
         new_prompt controls if new command with no effect should be automatically send to trigger print of new prompt in
@@ -159,11 +159,11 @@ class Shell(Cli):
         # And set huge number of columns to fix any command we throw at it
         self.run(f"stty columns {self._COLUMNS_NUM}")
 
-    def prompt(self, **kwargs):
+    def prompt(self, **kwargs) -> int:
         self.expect(self._NSF_PROMPT, **kwargs)
         return int(self.match(2))
 
-    def command(self, cmd=""):
+    def command(self, cmd: str = ""):
         # 20 characters are removed as those are approximately for prompt
         if len(cmd) >= (self._COLUMNS_NUM - 20):
             raise Exception("Command probably won't fit to terminal. Split it or increase number of columns.")
