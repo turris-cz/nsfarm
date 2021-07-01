@@ -11,7 +11,7 @@ NSFarm utilizes tools present on standard Linux based PC. It is based on Python3
 pytest, pexpect and LXD.
 
 You need following software and its dependencies:
-* Python3 (>=3.6)
+* Python3 (>=3.9)
 * pytest (>=5.0)
 * pytest-html (>=2.0)
 * pexpect

@@ -7,6 +7,7 @@ import pytest
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
+import nsfarm.web
 import nsfarm.target
 from . import mark
 
@@ -160,6 +161,15 @@ def fixture_lan1_client(lxd, device_map):
     """Starts client container on LAN1 and provides it.
     """
     with nsfarm.lxd.Container(lxd, 'client', {"net:lan": device_map["net:lan1"]}) as container:
+        container.shell.run('wait4boot')
+        yield container
+
+
+@pytest.fixture(name="lan1_webclient", scope="package")
+def fixture_lan1_webclient(lxd, device_map):
+    """Starts web-client container on LAN1 and provides it.
+    """
+    with nsfarm.web.Container(lxd, {"net:lan": device_map["net:lan1"]}) as container:
         container.shell.run('wait4boot')
         yield container
 

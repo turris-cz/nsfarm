@@ -1,10 +1,13 @@
 """Extended LXD container implementation just for Selenium container.
 """
-import typing
-import subprocess
 import contextlib
+import subprocess
+import typing
+
 import selenium.webdriver
-from ..lxd import LXDConnection, Container as LXDContainer
+
+from ..lxd import Container as LXDContainer
+from ..lxd import LXDConnection
 
 IMAGE = "selenium"
 
@@ -18,12 +21,17 @@ RESOLUTION = [1366, 769]
 
 
 class Container(LXDContainer):
-    """Container with WebDrivers to run Selenium tests against.
-    """
+    """Container with WebDrivers to run Selenium tests against."""
+
     open_viewer = False
 
-    def __init__(self, lxd_connection: LXDConnection, device_map: dict = None, internet: typing.Optional[bool] = None,
-                 strict: bool = True):
+    def __init__(
+        self,
+        lxd_connection: LXDConnection,
+        device_map: dict = None,
+        internet: typing.Optional[bool] = None,
+        strict: bool = True,
+    ):
         super().__init__(lxd_connection, IMAGE, device_map, internet, strict)
         self._viewer = None
         self._viewer_port = None
@@ -35,7 +43,7 @@ class Container(LXDContainer):
             self._viewer_port = self.network.proxy_open(port=5900)
             self.shell.run("wait4tcp 5900")
             self._logger.info("Running: vncviewer localhost:%d", self._viewer_port)
-            self._viewer = subprocess.Popen(["vncviewer", f'localhost:{self._viewer_port}'])
+            self._viewer = subprocess.Popen(["vncviewer", f"localhost:{self._viewer_port}"])
 
     def cleanup(self):
         if self._viewer is not None:

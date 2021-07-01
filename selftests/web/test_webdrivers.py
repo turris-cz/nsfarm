@@ -1,6 +1,7 @@
+"""Simple test to verify that our Selenium setup works as expected.
+"""
 import pytest
-from nsfarm.web import Container
-from nsfarm.web.container import DRIVER_PORTS
+from nsfarm.web import Container, BROWSERS
 # pylint: disable=no-self-use
 
 
@@ -12,7 +13,7 @@ def fixture_webcontainer(lxd_connection):
         yield container
 
 
-@pytest.mark.parametrize('browser', DRIVER_PORTS.keys(), scope="class")
+@pytest.mark.parametrize('browser', BROWSERS, scope="class")
 class TestDrivers:
     """Simple tests checking our setup for Selenium.
     """
