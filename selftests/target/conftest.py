@@ -6,6 +6,6 @@ def pytest_generate_tests(metafunc):
         return
     targets = [target for target in metafunc.config.targets.values() if target.is_available()]
     if targets:
-        metafunc.parametrize("target", targets)
+        metafunc.parametrize("target", targets, ids=[target.name for target in targets])
     else:
         metafunc.parametrize("target", [pytest.param("no-target", marks=pytest.mark.skip)])
