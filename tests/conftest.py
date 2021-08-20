@@ -1,9 +1,8 @@
 import time
 import random
 import string
-import pathlib
-import configparser
 import pytest
+import warnings
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
@@ -40,7 +39,6 @@ def pytest_configure(config):
     # Set target branch
     branch = config.getoption("-B")
     setattr(config, "target_branch", branch)
-
     # Store configuration to metadata (basically just for pytest-html)
     if hasattr(config, '_metadata'):
         config._metadata.update({
@@ -158,7 +156,7 @@ def fixture_isp_container(lxd, device_map):
 
 @pytest.fixture(name="lan1_client", scope="package")
 def fixture_lan1_client(lxd, device_map):
-    """Starts client container on LAN1 and provides it.
+    """Starts client container with static IP address 192.168.1.10/24 on LAN1 and provides it.
     """
     with nsfarm.lxd.Container(lxd, 'client', {"net:lan": device_map["net:lan1"]}) as container:
         container.shell.run('wait4boot')

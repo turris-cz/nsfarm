@@ -1,7 +1,7 @@
 #!/bin/bash
-# nsfarm:base-alpine net:lan
+# nsfarm:client net:lan
 ##################################################################################
-# Common image for clients on LAN
+# DHCP image for clients on LAN
 ##################################################################################
 set -e
 
@@ -13,11 +13,10 @@ apk add openssh-client
 # Additional applications installation
 apk add iperf3
 
+# First remove config of static ip
+sed -i '/auto lan.*/,$d' /etc/network/interfaces
 # Configure LAN1 interface for static local network
 cat >> /etc/network/interfaces <<EOF
 auto lan
-iface lan inet static
-        address 192.168.1.10
-        netmask 255.255.255.0
-        gateway 192.168.1.1
+iface lan inet dhcp
 EOF
