@@ -12,6 +12,7 @@ apk add openssh-client
 
 # Additional applications installation
 apk add iperf3
+apk add netcat-openbsd
 
 # First remove config of static ip
 sed -i '/auto lan.*/,$d' /etc/network/interfaces

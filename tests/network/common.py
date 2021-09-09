@@ -27,7 +27,14 @@ class InternetTests:
         """
         client.run(f"ping -c 1 '{server}'")
 
-    @pytest.mark.parametrize("server", ["nic.cz", "turris.cz", "google.com"])
+    @pytest.mark.parametrize(
+        "server",
+        [
+            "nic.cz",
+            "turris.cz",
+            "google.com",
+        ],
+    )
     def test_dns(self, client, server):
         """Try to resolve verious domain names."""
         client.run(f"nslookup '{server}'")

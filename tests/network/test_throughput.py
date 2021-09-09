@@ -6,8 +6,8 @@ load.
 We do not expect full speed of line. We expect at least 60% of speed here as rule of hand.
 """
 import abc
-import datetime
 import json
+import logging
 import warnings
 
 import pytest
@@ -24,7 +24,7 @@ TEST_INTERVAL = 10  # seconds of measurement intervals
 
 
 def get_test_data(shell, type):
-    """type is either 'sender' or 'receiver'"""
+    """Type is either 'sender' or 'receiver'"""
     data = json.loads(shell.output)
     speed_data = [round(val["sum"]["bits_per_second"] / BITS_IN_MBIT, 2) for val in data["intervals"]]
     client_speed = round(data["end"]["streams"][0][type]["bits_per_second"] / BITS_IN_MBIT, 2)
@@ -34,6 +34,8 @@ def get_test_data(shell, type):
 
 class ThroughputTest(abc.ABC):
     """Throughput test"""
+
+    logger = logging.getLogger(name="ThroughputTest")
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_client(self, client_board):
@@ -64,7 +66,7 @@ class ThroughputTest(abc.ABC):
         minimum = min(data_client_speed + data_server_speed)
         speed = (client_speed + server_speed) / 2
 
-        print(
+        self.logger.info(
             f"\n{self.__class__.__name__} measured data [Mbps]:\n"
             f"Speed reached (min/max) : {speed}({minimum}/{maximum})\n"
             f"Server speeds : {data_client_speed}\n"
@@ -79,7 +81,7 @@ class TestWAN(ThroughputTest):
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_server(self, isp_container):
-        """server for test"""
+        """Server for test"""
         shell = nsfarm.cli.Shell(isp_container.pexpect())
         return shell, isp_container.get_ip(["wan"], versions=[4])
 
@@ -89,7 +91,7 @@ class TestLAN(ThroughputTest):
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_server(self, lan1_client):
-        """server for test"""
+        """Server for test"""
         shell = nsfarm.cli.Shell(lan1_client.pexpect())
         return shell, lan1_client.get_ip(["lan"], versions=[4])
 
@@ -100,13 +102,13 @@ class TestRouting(ThroughputTest):
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_client(self, isp_container):
-        """client is alwaysrouter."""
+        """Client is always router."""
         shell = nsfarm.cli.Shell(isp_container.pexpect())
         return shell, isp_container.get_ip(["wan"], versions=[4])
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_server(self, lan1_client):
-        """server for test"""
+        """Server for test"""
         shell = nsfarm.cli.Shell(lan1_client.pexpect())
         return shell, lan1_client.get_ip(["lan"], versions=[4])
 
@@ -118,12 +120,12 @@ class TestSwitching(ThroughputTest):
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_client(self, test_client):
-        """client is lan device."""
+        """Client is lan device."""
         shell = nsfarm.cli.Shell(test_client.pexpect())
         return shell, test_client.get_ip(["lan"], versions=[4])
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_server(self, lan1_client):
-        """server for test"""
+        """Server for test"""
         shell = nsfarm.cli.Shell(lan1_client.pexpect())
         return shell, lan1_client.get_ip(["lan"], versions=[4])
