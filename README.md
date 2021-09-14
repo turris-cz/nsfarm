@@ -1,12 +1,10 @@
-NSFarm (Network System testing Farm)
-====================================
+# NSFarm (Network System testing Farm)
 NSFarm is system testing tool for routers. It is intended as external device
 testing tool but it does not do exactly blackbox testing. Its target is to do
 testing of complete software stack of router.
 
 
-Requirements
-------------
+## Requirements
 NSFarm utilizes tools present on standard Linux based PC. It is based on Python3,
 pytest, pexpect and LXD.
 
@@ -32,8 +30,7 @@ info about hardware connection please see [hardware
 wiring](docs/hardware_wiring.md).
 
 
-Usage
------
+## Usage
 To run tests you have to have configuration file. That file defines available
 target boards tests can be run on. It is in INI file format. Please see
 [targets.example.ini](targets.example.ini) for available options.
@@ -77,8 +74,7 @@ pytest -T omnia --self-contained-html --html=report.html
 You can change `report.html` to any other name or path.
 
 
-NSFarm utility
---------------
+## NSFarm utility
 `nsfarm` is not only library but serves at the same time as utility Python
 program. It implements some common operations you might want to use.
 
@@ -86,6 +82,5 @@ To invoke NSFarm utility you can use script `tool.sh`. Use `./tool.sh -h` to see
 documentation and abilities of this utility.
 
 
-How it works
-------------
+## How it works
 TBD

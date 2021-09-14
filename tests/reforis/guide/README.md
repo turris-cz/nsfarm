@@ -1,5 +1,4 @@
-reForis Guide testing
-=====================
+# reForis Guide testing
 
 These tests go trough reForis Guide in a multiple way. They mainly check reForis
 stability and ensure that user's experience with first setup is as good as
