@@ -12,13 +12,23 @@ def parser(parser):
     clean = subparsers.add_parser('clean', help='Remove old and unused containers')
     clean.set_defaults(lxd_op='clean')
     clean.add_argument(
+        '-i', '--images',
+        action='store_true',
+        help='Clean no longer used images.'
+    )
+    clean.add_argument(
+        '-c', '--containers',
+        action='store_true',
+        help='Clean no longer used containers.'
+    )
+    clean.add_argument(
         'DELTA',
         nargs='?',
         default=dateutil.relativedelta.relativedelta(weeks=1),
         type=parse_deltatime,
         help="""Time delta for how long image should not be used to be cleaned (removed). In default if not specified
         '1w' is used. Format is expect to be a number with suffix. Supported suffixes are m(inute), h(our), d(ay) and
-        w(eek).
+        w(eek). This applies only to images thus it has no effect if used with --containers.
         """
     )
     clean.add_argument(
@@ -101,7 +111,11 @@ def parse_deltatime(spec):
 def op_clean(args, _):
     """Handler for command line operation clean
     """
-    removed = utils.clean(args.DELTA, dry_run=args.dry_run)
+    removed = []
+    if args.images or not args.containers:
+        removed += utils.clean_images(args.DELTA, dry_run=args.dry_run)
+    if args.containers or not args.images:
+        removed += utils.clean_containers(dry_run=args.dry_run)
     if removed:
         print('\n'.join(removed))
     sys.exit(0)

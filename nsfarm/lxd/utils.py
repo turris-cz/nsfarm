@@ -10,19 +10,21 @@ from .image import Image
 
 logger = logging.getLogger(__package__)
 
+BOOTSTRAP_LIMIT = dateutil.relativedelta.relativedelta(hours=1)
 
-def clean(delta, dry_run=False):
+
+def clean_images(delta: dateutil.relativedelta.relativedelta, dry_run: bool = False):
     """Remove all images that were not used for longer then given delta.
 
     delta: this should be instance of datetime.relativedelta
-    dry_run: do not remove anything only report alias of those to be removed on stdout
+    dry_run: do not remove anything only return aliases of those to be removed
 
     Returns list of (to be) removed images.
     """
     connection = LXDConnection()
     since = datetime.today() - delta
 
-    removed = list()
+    removed = []
     for img in connection.local.images.all():
         if not any(alias["name"].startswith("nsfarm/") for alias in img.aliases):
             continue
@@ -35,6 +37,51 @@ def clean(delta, dry_run=False):
             if not dry_run:
                 logger.warning("Removing image: %s %s", img.aliases[0]["name"], img.fingerprint)
                 img.delete()
+    return removed
+
+
+def _delete_container(cont):
+    ephemeral = cont.ephemeral
+    if cont.status == "Running":
+        cont.stop(wait=True)
+    if not ephemeral:
+        cont.delete()
+
+
+def clean_containers(dry_run=False):
+    """Remove abandoned containers created by nsfarm.
+
+    dry_run: do not remove anything, only return list of containers names to be removed.
+
+    Returns list of (to be) removed containers.
+    """
+    connection = LXDConnection()
+    since = datetime.today() - BOOTSTRAP_LIMIT
+
+    removed = []
+    for cont in connection.local.instances.all():
+        if not cont.name.startswith("nsfarm-"):
+            continue
+        if cont.name.startswith("nsfarm-bootstrap-"):
+            # We can't simply identify owner of bootstrap container but we can set limit on how long bootstrap should
+            # take at most and remove any older containers.
+            created_at = dateutil.parser.parse(cont.created_at).replace(tzinfo=None)
+            if created_at < since:
+                removed.append(cont.name)
+                if not dry_run:
+                    _delete_container(cont)
+        else:
+            # Container have PID of process they are spawned by in the name. We can't safely remove any container
+            # without running owner process.
+            pid = int(cont.name.split('-')[-1].split('.')[0])
+            try:
+                os.kill(pid, 0)
+            except OSError as err:
+                if (err.errno != 3):  # 3 == ESRCH: No such process
+                    raise
+                removed.append(cont.name)
+                if not dry_run:
+                    _delete_container(cont)
     return removed
 
 

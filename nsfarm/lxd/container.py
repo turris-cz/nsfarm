@@ -77,9 +77,9 @@ class Container:
         name = f"{prefix}-{self._image.name}-{os.getpid()}"
         if self._lxd.local.containers.exists(name):
             i = 1
-            while self._lxd.local.containers.exists(f"{name}-{i}"):
+            while self._lxd.local.containers.exists(f"{name}.{i}"):
                 i += 1
-            name = f"{name}-{i}"
+            name = f"{name}.{i}"
         return name
 
     def cleanup(self):
