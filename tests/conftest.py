@@ -8,6 +8,7 @@ import pytest
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
+import nsfarm.setup
 import nsfarm.target
 import nsfarm.web
 
@@ -207,25 +208,13 @@ def fixture_board_wan(client_board, isp_container):
     client_board.run("uci commit network")
 
 
-PUB_TEST_KEY = """untrusted comment: Turris OS devel key
-RWS0FA1Nun7JDt0L8SjRsDRJGDvUCdDdfs21feiW+qpGHNMhVZ930hky
-"""
-
-
 @pytest.fixture(name="updater_branch", scope="package")
 def fixture_updater_branch(request, client_board):
     """Setup target branch to updater.
     This is required as not in all branches is the target updater branch the build branch.
     """
-    if request.config.target_branch == "hbk":
-        # HBK needs special tweak as these medkits do not contain test key but repository is signed with it.
-        # WARNING we do not remove this file
-        client_board.txt_write("/etc/updater/keys/test.pub", PUB_TEST_KEY)
-    client_board.run(
-        f"uci set updater.turris.branch='{request.config.target_branch}' && uci commit updater.turris.branch"
-    )
-    yield request.config.target_branch
-    client_board.run("uci del updater.turris.branch && uci commit updater.turris.branch")
+    nsfarm.setup.updater.UpdaterBranch(client_board, request.config.target_branch).request(request)
+    return request.config.target_branch
 
 
 ########################################################################################################################
