@@ -1,7 +1,10 @@
+import collections.abc
 import random
 import string
 import time
+import typing
 
+import pexpect
 import pylxd
 import pytest
 
@@ -127,28 +130,68 @@ def fixture_board_root_password(request, board_serial):
         yield pass_setup.password
 
 
-@pytest.fixture(name="client_board", scope="package")
-def fixture_client_board(board, board_serial, board_root_password, lan1_client):
-    """Starts client on LAN1 and connect to board using SSH.
-    Provides instance of nsfarm.cli.Shell() connected to board shell using SSH trough client container.
+@pytest.fixture(name="board_access", scope="package")
+def fixture_board_access(board, board_serial, board_root_password, lan1_client):
+    """Starts client on LAN1 and provides a way to connect to board using SSH.
+    Provides function that opens new shell instance or runs provided command trough SSH.
 
     This is prefered over serial console as kernel logs are preferably printed there and that can break CLI machinery.
     """
+
+    def spawn(
+        command: typing.Optional[collections.abc.Iterable[str]] = None,
+    ) -> typing.Union[nsfarm.cli.Shell, pexpect.spawn]:
+        """Open new connection to board using SSH or run given command"""
+        ssh = ["ssh", "-q", "192.168.1.1"]
+        if command is None:
+            return nsfarm.cli.Shell(lan1_client.pexpect(ssh))
+        return lan1_client.pexpect(ssh + list(command))
+
     # Let's have syslog on serial console as well as kernel log
     board_serial.command("while ! [ -f /var/log/messages ]; do sleep 1; done && tail -f /var/log/messages")
     board.set_serial_flush(True)
 
-    # Now spawn client container and connect
-    lan1_client.shell.run("wait4network")
-    pexp = lan1_client.pexpect(["ssh", "-q", "192.168.1.1"])
-    pexp.expect_exact("root@192.168.1.1's password:")
-    pexp.sendline(board_root_password)
-    pexp.expect_exact("root@turris:")
-    yield nsfarm.cli.Shell(pexp)
+    lan1_client.shell.run("wait4network")  # Make sure that client can access the router
+    yield spawn
 
     board.set_serial_flush(False)
     board_serial.ctrl_c()  # Terminate tail -f on serial console
     board_serial.prompt()
+
+
+class BoardShell(nsfarm.cli.Shell):
+    """Special Shell instance that is able to reconnect. That is to replace connection with the new one."""
+
+    def __init__(self, board_access):
+        self._board_access = board_access
+        self.reconnect()
+
+    def reconnect(self):
+        """Open the new connection instead of the existing one."""
+        super().__init__(self._board_access([]))
+
+
+@pytest.fixture(name="board_access_for_fixture", scope="package")
+def fixture_board_access_for_fixture(board_access) -> BoardShell:
+    """This is single instance of cli.Shell received from board_access that should be used in fixtures only.
+    The reason for this is that we have load of fixtures before we ever get to single tests and spawning shell for every
+    single one of the would get spammy very fast. We expect fixtures to be well behaved and thus we give them one shared
+    shell.
+
+    This returns special variant of cli.Shell that has one additional method reconnect(). It allows you to request the
+    new instance and that way replace the existing one.
+    """
+    return BoardShell(board_access)
+
+
+@pytest.fixture(name="client_board", scope="package")
+def fixture_client_board(board_access):
+    """Provides Shell instance on board trough board_access.
+
+    This is obsolete fixture and should no longer be used in new tests. Instead create new shell instance for every test
+    using function provided by board_access fixture.
+    """
+    return board_access()
 
 
 ########################################################################################################################
