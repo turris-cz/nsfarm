@@ -20,4 +20,4 @@ uci commit network
 # Now extend system
 wait4network
 opkg update
-opkg install bash coreutils-stty
+opkg install bash coreutils-stty coreutils-base64

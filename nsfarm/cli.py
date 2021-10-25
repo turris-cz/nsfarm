@@ -187,21 +187,23 @@ class Shell(Cli):
         Returns string containing text of the file
         """
         self.run(f"cat '{path}'")
-        return self.output
+        return self.output.replace("\r\n", "\n")
 
-    def txt_write(self, path, content):
+    def txt_write(self, path, content, append=False):
         """Write text file via shell.
 
         Note that parent directory has to exist and any file will be rewritten.
 
         path: path to be written to
         content: string with data to be written to text file.
+        append: append instead of just write.
         """
-        self.sendline(f"cat > '{path}'")
+        self.sendline(f"cat {'>>' if append else '>'} '{path}'")
         self.sendline(content)
         self.sendeof()
-        if self.prompt() != 0:
-            raise Exception(f"Writing file failed with exit code: {self.prompt()}")
+        exit_code = self.prompt()
+        if exit_code != 0:
+            raise Exception(f"Writing file failed with exit code: {exit_code}")
 
     def bin_read(self, path):
         """Read binary file via shell encoded in base64.
@@ -224,8 +226,9 @@ class Shell(Cli):
         self.sendline(f"base64 -d > '{path}'")
         self.sendline(base64.b64encode(content))
         self.sendeof()
-        if self.prompt() != 0:
-            raise Exception(f"Writing file failed with exit code: {self.prompt()}")
+        exit_code = self.prompt()
+        if exit_code != 0:
+            raise Exception(f"Writing file failed with exit code: {exit_code}")
 
     @property
     def output(self):
