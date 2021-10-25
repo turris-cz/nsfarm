@@ -13,6 +13,7 @@ import warnings
 import pytest
 
 import nsfarm
+from nsfarm.setup import openwrt
 
 # TODO Add some exclusive locking for these tests between NSFarm instances to ensure that we won't fail these because we
 # are running too much instances in paralel of this.
@@ -36,10 +37,9 @@ class ThroughputTest(abc.ABC):
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_client(self, client_board):
-        """client is alwaysrouter."""
-        client_board.run("opkg update && opkg install iperf3")
-        yield client_board
-        client_board.run("opkg remove iperf3")
+        """Client is always router."""
+        with openwrt.OpkgInstall(client_board, "iperf3"):
+            yield client_board
 
     def test_TCP(self, iperf_server, iperf_client, board_wan, board):
         """Basic TCP throughput test using iperfgit"""

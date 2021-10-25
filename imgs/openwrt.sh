@@ -20,4 +20,6 @@ uci commit network
 # Now extend system
 wait4network
 opkg update
-opkg install bash coreutils-base64
+opkg install \
+	bash coreutils-base64 diffutils \
+	shadow-chpasswd

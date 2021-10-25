@@ -119,13 +119,12 @@ def fixture_board_serial(lxd_client, request, board):
 
 @pytest.fixture(name="board_root_password", scope="package")
 def fixture_board_root_password(request, board_serial):
-    """Sets random password for user root.
+    """Sets random password for user root and thus it unlocks it (note that it is locked by default).
     Returns configured random password
     """
-    password = "".join(random.choice(string.ascii_lowercase) for i in range(16))
-    board_serial.run(f"echo 'root:{password}' | chpasswd")
-    request.addfinalizer(lambda: board_serial.run("passwd --delete root"))
-    return password
+    board_serial.run("grep '^root:!:' /etc/shadow")  # verify that account is locked
+    with nsfarm.setup.utils.RootPassword(board_serial) as pass_setup:
+        yield pass_setup.password
 
 
 @pytest.fixture(name="client_board", scope="package")
