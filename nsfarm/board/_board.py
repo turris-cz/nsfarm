@@ -77,7 +77,7 @@ class Board(abc.ABC):
         # Now load image from TFTP
         with Container(lxd_client, "boot", self.config.device_map()) as cont:
             ccli = cli.Shell(cont.pexpect())
-            ccli.run(f"prepare_turris_image '{os_branch}'", timeout=120)
+            ccli.run(f"prepare_turris_image '{self.config.board}' '{os_branch}'", timeout=120)
             uboot.run("setenv ipaddr 192.168.1.142")
             uboot.run("setenv serverip 192.168.1.1")
             self._board_bootup(uboot)
