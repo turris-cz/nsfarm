@@ -74,12 +74,13 @@ class Container:
         logger.debug("Container prepared: %s", self.lxd_container.name)
 
     def _container_name(self, prefix="nsfarm"):
+        # Warning: the other parts of this project rely on this naming convention to identify containers (such as
+        # cleanup algorithm). Make sure that you update them when you do changes in this code.
         name = f"{prefix}-{self._image.name}-{os.getpid()}"
-        if self._lxd.local.containers.exists(name):
-            i = 1
-            while self._lxd.local.containers.exists(f"{name}.{i}"):
-                i += 1
-            name = f"{name}.{i}"
+        i = 1
+        while self._lxd.local.containers.exists(f"{name}x{i}"):
+            i += 1
+        name = f"{name}x{i}"
         return name
 
     def cleanup(self):

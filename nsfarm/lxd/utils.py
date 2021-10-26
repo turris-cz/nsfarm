@@ -73,7 +73,7 @@ def clean_containers(dry_run=False):
         else:
             # Container have PID of process they are spawned by in the name. We can't safely remove any container
             # without running owner process.
-            pid = int(cont.name.split('-')[-1].split('.')[0])
+            pid = int(cont.name.split('-')[-1].split('x')[0])
             try:
                 os.kill(pid, 0)
             except OSError as err:
