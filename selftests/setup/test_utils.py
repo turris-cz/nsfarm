@@ -6,7 +6,7 @@ import pytest
 
 from nsfarm.cli import Shell
 from nsfarm.lxd import Container
-from nsfarm.setup import openwrt, utils
+from nsfarm.setup import alpine, openwrt, utils
 
 
 class Common:
@@ -110,9 +110,19 @@ class TestOpenWrt(Common):
     image = "openwrt"
 
     @pytest.fixture(scope="class", autouse=True)
-    def fixture_install_packages(self, request, container):
-        # Testing password
-        openwrt.OpkgInstall(container.shell, "shadow-chpasswd").request(request)
+    def fixture_install_packages(self, container):
+        # These are in default on Turris OS but we are testing against vanila OpenWrt
+        openwrt.OpkgInstall(container.shell, "shadow-chpasswd", "openssh-client", "openssh-keygen").revert_not_needed()
+
+    @pytest.fixture(name="destination", scope="class")
+    def fixture_destination(self, lxd_client):
+        """Destination container used for testing SSHKey."""
+        with Container(lxd_client, self.image, internet=True, name="destination") as container:
+            # Dropbear does not read authorized_keys file in user's home but in etc. We have to link it.
+            container.shell.run("ln -sf /root/.ssh/authorized_keys /etc/dropbear/authorized_keys")
+            container.shell.run("wait4network")
+            openwrt.OpkgInstall(container.shell, "shadow-chpasswd").revert_not_needed()
+            yield container
 
 
 class TestAlpine(Common):
@@ -123,3 +133,17 @@ class TestAlpine(Common):
     @pytest.fixture(name="unlock_root", scope="class", autouse=True)
     def fixture_unlock_root(self, container):
         container.shell.run("passwd -u root")
+
+    @pytest.fixture(scope="class", autouse=True)
+    def fixture_install_packages(self, container):
+        alpine.ApkInstall(container.shell, "openssh-client").revert_not_needed()
+
+    @pytest.fixture(name="destination", scope="class")
+    def fixture_destination(self, lxd_client):
+        """Destination container used for testing SSHKey."""
+        with Container(lxd_client, self.image, internet=True, name="destination") as container:
+            container.shell.run("passwd -u root")
+            container.shell.run("wait4network")
+            container.shell.run("apk add openssh-server")
+            container.shell.run("rc-service sshd start")
+            yield container

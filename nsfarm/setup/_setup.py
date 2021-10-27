@@ -6,6 +6,8 @@ import pytest
 
 
 class Setup(abc.ABC):
+    """Base for all setup classes implementing standard API and helper methods for setup usage."""
+
     def __enter__(self):
         self.prepare()
         return self

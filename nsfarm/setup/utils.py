@@ -90,3 +90,27 @@ class RootPassword(_Setup):
 
     def revert(self):
         self._sh.run("passwd -d root")
+
+
+class SSHKey(_Setup):
+    """Deploy SSH public key so it can be accessed without password.
+    Warning: This identifies keys using comments (that commonly contain identifier of local user and host) not the full
+    key. It removes all keys matching used comment so make sure that you use unique comments.
+    """
+
+    def __init__(self, local: cli.Shell, destination: cli.Shell, key: str = "id_rsa"):
+        self._local = local
+        self._destination = destination
+        self._keyfile = key
+        self._key: typing.Optional[str] = None
+
+    def prepare(self, revert_needed: bool = True):
+        self._key = self._local.txt_read(f".ssh/{self._keyfile}.pub")
+        assert self._key
+        self._destination.run("mkdir -p .ssh")
+        self._destination.txt_write(".ssh/authorized_keys", self._key, append=True)
+
+    def revert(self):
+        # We remove here depending on comment only as that is way shorter and we won't hit column limit that way.
+        comment = self._key.split(" ")[2]
+        self._destination.run(f"sed -i '/{comment}$/d' ~/.ssh/authorized_keys")

@@ -19,7 +19,7 @@ class OpkgInstall(_Setup):
         self._sh = shell
         # Note: there is no need for quotations because package names should not contain any special characters.
         self._pkgs = " ".join(args)
-        self._to_remove = []
+        self._to_remove: list[str] = []
         self._opkg = binary
 
     def prepare(self, revert_needed: bool = True):

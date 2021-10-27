@@ -117,7 +117,9 @@ def fixture_board_serial(lxd_client, request, board):
     Provides instance of nsfarm.cli.Shell()
     """
     request.addfinalizer(lambda: board.reset(True))
-    return board.bootup(lxd_client, request.config.target_branch)
+    serial = board.bootup(lxd_client, request.config.target_branch)
+    serial.run("cd")  # move to /root from / as that is in general expected and consistent with SSH
+    return serial
 
 
 @pytest.fixture(name="board_root_password", scope="package")
@@ -131,7 +133,7 @@ def fixture_board_root_password(request, board_serial):
 
 
 @pytest.fixture(name="board_access", scope="package")
-def fixture_board_access(board, board_serial, board_root_password, lan1_client):
+def fixture_board_access(board, board_serial, lan1_client, board_root_password):
     """Starts client on LAN1 and provides a way to connect to board using SSH.
     Provides function that opens new shell instance or runs provided command trough SSH.
 
@@ -147,16 +149,17 @@ def fixture_board_access(board, board_serial, board_root_password, lan1_client):
             return nsfarm.cli.Shell(lan1_client.pexpect(ssh))
         return lan1_client.pexpect(ssh + list(command))
 
-    # Let's have syslog on serial console as well as kernel log
-    board_serial.command("while ! [ -f /var/log/messages ]; do sleep 1; done && tail -f /var/log/messages")
-    board.set_serial_flush(True)
+    with nsfarm.setup.utils.SSHKey(lan1_client.shell, board_serial):
+        # Let's have syslog on serial console
+        board_serial.command("while ! [ -f /var/log/messages ]; do sleep 1; done && tail -f /var/log/messages")
+        board.set_serial_flush(True)
 
-    lan1_client.shell.run("wait4network")  # Make sure that client can access the router
-    yield spawn
+        lan1_client.shell.run("wait4network")  # Make sure that client can access the router
+        yield spawn
 
-    board.set_serial_flush(False)
-    board_serial.ctrl_c()  # Terminate tail -f on serial console
-    board_serial.prompt()
+        board.set_serial_flush(False)
+        board_serial.ctrl_c()  # Terminate tail -f on serial console
+        board_serial.prompt()
 
 
 class BoardShell(nsfarm.cli.Shell):
