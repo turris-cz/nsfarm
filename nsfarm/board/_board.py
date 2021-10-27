@@ -20,7 +20,7 @@ class Board(abc.ABC):
         self.config = target_config
         # Open serial console to board
         self._serial = serial.Serial(self.config.serial, 115200)
-        self._fdlogging = cli.FDLogging(self._serial, logging.getLogger(__package__))
+        self._fdlogging = cli.FDLogging(self._serial.fileno(), logging.getLogger(__package__))
         self._pexpect = fdpexpect.fdspawn(self._fdlogging.socket)
         # Set board to some known state
         self.reset(True)  # Hold in reset state
@@ -83,7 +83,7 @@ class Board(abc.ABC):
             self._board_bootup(uboot)
         # Wait for bootup
         self._pexpect.expect_exact("Router Turris successfully started.", timeout=240)
-        # Note Shell sends new line which opens terminal for it
+        self._pexpect.sendline("")
         shell = cli.Shell(self._pexpect)
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
         return shell

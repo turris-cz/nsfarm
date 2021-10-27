@@ -3,12 +3,18 @@
 This ensures systematic logging and access to terminals. We implement two special terminal types at the moment. We have
 support for shell and u-boot.  They differ in a way how they handle prompt and methods they provide to user.
 """
+# Notest on some of the hacks in this file:
+#
+# There are new line character matches in regular expressions. Correct one is \r\n but some serial controlles for some
+# reason also use \n\r so we match both alternatives.
+#
 import abc
 import base64
 import fcntl
 import io
 import logging
 import os
+import re
 import select
 import socket
 import threading
@@ -48,6 +54,8 @@ def run_exit_code_zero(exit_code):
 class Cli(abc.ABC):
     """This is generic abstraction on top of pexpect for command line interface."""
 
+    _NOCMD: str
+
     def __init__(self, pexpect_handle, flush=True):
         self._pe = pexpect_handle
         if flush:
@@ -72,23 +80,22 @@ class Cli(abc.ABC):
         pexpect before but in others it can differ so you should always use this property instead of before.
         """
 
-    def command(self, cmd: str = ""):
+    def command(self, cmd: str = "") -> None:
         """Calls pexpect sendline and expect cmd with trailing new line.
 
         This is handy when you are communicating with console that echoes input back. This effectively removes sent
         command from output.
         """
         self.sendline(cmd)
-        # WARNING: this has known problem with serial console. Shells on serial console breaks line at 80 characters and
-        # that means that this expect won't match.
-        self.expect_exact(cmd)
+        # Note: We have to expect possible line break after every character because terminal breaks echoed characters
+        # when there is more characters than columns. We could also simply disable echo but that is not always possible
+        # in our case. In the end there should be no issue in matching random new lines in command we sent.
+        for char in cmd:
+            self.expect_exact([char, "\r", "\n"])
         self.expect_exact(["\r\n", "\n\r"])
 
     def run(
-        self,
-        cmd: str = "",
-        exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero,
-        **kwargs,
+        self, cmd: str = "", exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero, **kwargs
     ) -> typing.Any:
         """Run given command and follow output until prompt is reached and return exit code with optional automatic
         check. This is same as if you would call cmd() and prompt() while checking exit_code.
@@ -131,61 +138,56 @@ class Cli(abc.ABC):
 class Shell(Cli):
     """Unix shell support class.
 
-    This is tested to handle busybox and bash.
+    This is tested to handle busybox's ash and bash.
+
+    Warning: this changes the prompt and it won't revert it. In most use cases this should not be an issue but keep it
+    on mind when using this.
     """
 
-    _COLUMNS_NUM = 800
     _NOCMD = ":"
-    _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?)\$ '"
-    _NSF_PROMPT = r"(\r\n|\n\r|^)nsfprompt:([0-9]+)($|#) "
+    _SET_NSF_PROMPT = "export PS1='nsfprompt:$(echo -n $?)\\$ '"
+    _NSF_PROMPT = re.compile(b"(\r\n|\n\r)?nsfprompt:([0-9]+)($|#) ")
     _INITIAL_PROMPTS = [
-        r"(\r\n|\n\r|^).+? ($|#) ",
-        r"(\r\n|\n\r|^)bash-.+?($|#) ",
-        r"(\r\n|\n\r|^)root@[a-zA-Z0-9_-]*:",
-        r"(\r\n|\n\r|^).*root@turris.*#",  # Note: this is weird dual prompt from lxd ssh
+        re.compile(b"root@[a-zA-Z0-9_-]*:.*($|#) "),  # Common prompt for root user on most Linux distributions
+        re.compile(b"(\r\n|\n\r|^).+? ($|#) "),  # Bare Busybox prompt
+        re.compile(b"bash-.+?($|#) "),  # Default Bash prompt
         _NSF_PROMPT,
     ]
-    # TODO compile prompt regexp to increase performance
 
-    def __init__(self, pexpect_handle, flush=True):
+    def __init__(self, pexpect_handle: pexpect.spawnbase, flush: bool = True):
         super().__init__(pexpect_handle, flush=flush)
         # Firt check if we are on some sort of shell prompt
-        self.command()
         self.expect(self._INITIAL_PROMPTS)
         # Now sanitize prompt format
         self.run(self._SET_NSF_PROMPT)
-        # And set huge number of columns to fix any command we throw at it
-        self.run(f"stty columns {self._COLUMNS_NUM}")
 
     def prompt(self, **kwargs) -> int:
         self.expect(self._NSF_PROMPT, **kwargs)
         return int(self.match(2))
 
-    def command(self, cmd: str = ""):
-        # 20 characters are removed as those are approximately for prompt
-        if len(cmd) >= (self._COLUMNS_NUM - 20):
-            raise Exception("Command probably won't fit to terminal. Split it or increase number of columns.")
-        return super().command(cmd)
-
-    def ctrl_c(self):
+    def ctrl_c(self) -> None:
         """Sends ^C character."""
         self.send(CTRL_C)
 
-    def ctrl_d(self):
+    def ctrl_d(self) -> None:
         """Sends ^D character."""
         self.send(CTRL_D)
 
-    def txt_read(self, path):
+    def txt_read(self, path: str, expect_exist: bool = True) -> typing.Optional[str]:
         """Read text file via shell.
 
         path: path to text file to read
+        expect_exist: raise exception if file can't be read
 
-        Returns string containing text of the file
+        Returns string containing text of the file or None if file can't be read in some cases.
         """
-        self.run(f"cat '{path}'")
+        if self.run(f"cat '{path}'", exit_code=None) != 0:
+            if expect_exist:
+                raise Exception(f"Can't get file: {path}")
+            return None
         return self.output.replace("\r\n", "\n")
 
-    def txt_write(self, path, content, append=False):
+    def txt_write(self, path: str, content: str, append: bool = False) -> None:
         """Write text file via shell.
 
         Note that parent directory has to exist and any file will be rewritten.
@@ -196,22 +198,26 @@ class Shell(Cli):
         """
         self.sendline(f"cat {'>>' if append else '>'} '{path}'")
         self.sendline(content)
-        self.sendeof()
+        self.ctrl_d()
         exit_code = self.prompt()
         if exit_code != 0:
             raise Exception(f"Writing file failed with exit code: {exit_code}")
 
-    def bin_read(self, path):
+    def bin_read(self, path: str, expect_exist: bool = True) -> typing.Optional[bytes]:
         """Read binary file via shell encoded in base64.
 
         path: path to file to read
+        expect_exist: raise exception if file can't be read
 
-        Returns bytes with content of binary file from the path.
+        Returns bytes with content of binary file from the path or None if file can't be read in some cases.
         """
-        self.run(f"base64 '{path}'")
+        if self.run(f"base64 '{path}'", exit_code=None) != 0:
+            if expect_exist:
+                raise Exception(f"Can't get file: {path}")
+            return None
         return base64.b64decode(self.output)
 
-    def bin_write(self, path, content):
+    def bin_write(self, path: str, content: bytes) -> None:
         """Write given bytes to binary file in path.
 
         Note that parent directory has to exist and any file will be rewritten.
@@ -221,13 +227,13 @@ class Shell(Cli):
         """
         self.sendline(f"base64 -d > '{path}'")
         self.sendline(base64.b64encode(content))
-        self.sendeof()
+        self.ctrl_d()
         exit_code = self.prompt()
         if exit_code != 0:
             raise Exception(f"Writing file failed with exit code: {exit_code}")
 
     @property
-    def output(self):
+    def output(self) -> str:
         return self._pe.before.decode()
 
 
@@ -256,6 +262,43 @@ class Uboot(Cli):
         return self._output
 
 
+class LineBytesAggregate:
+    """Aggregates bytes and dispatches them in lines instead.
+    This is primarily used to split stream of communication in CLI session to distinct blocks that makes sense to send
+    to logging system.
+    """
+
+    def __init__(self, callback: typing.Callable[[bytes], None]):
+        self._callback = callback
+        self.linebuf = b""
+        self.newline = True
+
+    def add(self, buf: bytes) -> None:
+        """Add bytes to aggregate."""
+        jbuf = self.linebuf + buf
+        i = 0
+        while i < len(jbuf):
+            if jbuf[i] == b"\r"[0] or (not self.newline and jbuf[i] == b"\n"[0]):
+                self.newline = self.newline or jbuf[i] == b"\n"[0]
+                i += 1
+                continue  # skip new line characters
+            ri = jbuf.find(b"\r", i)  # cursor leftward
+            ni = jbuf.find(b"\n", i)  # cursor to the new line
+            eol = ri if ni == -1 else ni if ri == -1 else min(ri, ni)
+            if eol == -1:  # No new line byte located, store for now
+                self.linebuf = jbuf[i:]
+                return
+            self._callback(jbuf[i:eol])
+            i = eol + 1
+            self.newline = eol == ni
+        self.linebuf = b""
+
+    def flush(self):
+        """Dispatch unfinished line."""
+        if self.linebuf:
+            self._callback(self.linebuf)
+
+
 class FDLogging:
     """Live logging with data passtrough.
 
@@ -266,13 +309,11 @@ class FDLogging:
     located not before that.
     """
 
-    _EXPECTED_EOL = b"\n\r"
-
-    def __init__(self, fileno, logger, in_level=logging.INFO, out_level=logging.DEBUG):
+    def __init__(self, fileno: int, logger: logging.Logger, in_level=logging.INFO, out_level=logging.DEBUG):
         self._logger = logger
         self._in_level = in_level
         self._out_level = out_level
-        self._fileno = fileno if isinstance(fileno, int) else fileno.fileno()
+        self._fileno = fileno
         self._our_sock, self._user_sock = socket.socketpair()
         self._propagate = True
 
@@ -307,33 +348,17 @@ class FDLogging:
         self.close()
 
     def _log_line(self, prefix, line, level):
-        self._logger.log(level, prefix + repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
-
-    def _log(self, prev_data, new_data, level, prefix):
-        data = prev_data + new_data
-        lines = data.splitlines(keepends=True)
-        if not lines:
-            return data
-        # The last line does not have to be terminated (no new line character) so just preserve it
-        reminder = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b""
-        for line in lines:
-            self._log_line(prefix, line, level)
-        return reminder
+        self._logger.log(level, prefix + repr(line.expandtabs())[2:-1])
 
     def _thread_func(self):
-        data = {
-            self._fileno: b"",
-            self._our_sock.fileno(): b"",
-        }
-        level = {
-            self._fileno: self._in_level,
-            self._our_sock.fileno(): self._out_level,
+        aggregates = {
+            self._fileno: LineBytesAggregate(lambda line: self._log_line("> ", line, self._in_level)),
+            self._our_sock.fileno(): LineBytesAggregate(lambda line: self._log_line("< ", line, self._out_level)),
         }
         output = {
             self._fileno: self._our_sock.fileno(),
             self._our_sock.fileno(): self._fileno,
         }
-        prefix = {self._fileno: "< ", self._our_sock.fileno(): "> "}
 
         poll = select.poll()
         poll.register(self._fileno, select.POLLIN)
@@ -343,10 +368,10 @@ class FDLogging:
                 fileno, event = poll_event
                 if event == select.POLLNVAL:
                     return
-                new_data = os.read(fileno, io.DEFAULT_BUFFER_SIZE)
+                data = os.read(fileno, io.DEFAULT_BUFFER_SIZE)
                 if fileno != self._fileno or self._propagate:
-                    os.write(output[fileno], new_data)
-                data[fileno] = self._log(data[fileno], new_data, level[fileno], prefix[fileno])
+                    os.write(output[fileno], data)
+                aggregates[fileno].add(data)
 
 
 class PexpectLogging:
@@ -355,29 +380,21 @@ class PexpectLogging:
     This emulates file object and is intended to be used with pexpect handler as logger.
     """
 
-    _EXPECTED_EOL = b"\n\r"
-
-    def __init__(self, logger):
+    def __init__(self, logger: logging.Logger, prefix: str = ""):
         self._level = logging.INFO
         self.logger = logger
-        self.linebuf = b""
+        self.aggregate = LineBytesAggregate(self._log)
 
     def __del__(self):
-        if self.linebuf:
-            self._log(self.linebuf)
+        self.aggregate.flush()
 
-    def _log(self, line):
-        self.logger.log(self._level, repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
+    def _log(self, line: bytes) -> None:
+        self.logger.log(self._level, repr(line.expandtabs())[2:-1])
 
-    def write(self, buf):
+    def write(self, buf: bytes) -> None:
         """Standard-like file write function."""
-        jbuf = self.linebuf + buf
-        lines = jbuf.splitlines(keepends=True)
-        # If the last line is not terminated (no new line character) so just preserve it
-        self.linebuf = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b""
-        for line in lines:
-            self._log(line)
+        self.aggregate.add(buf)
 
-    def flush(self):
+    def flush(self) -> None:
         """Standard-like flush function."""
-        # Just ignore flush
+        # Just ignore flush as it is not what we want in general.

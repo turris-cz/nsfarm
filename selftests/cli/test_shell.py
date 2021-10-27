@@ -21,6 +21,13 @@ class Common:
         """Simple command that has no effect but fails with known exit code."""
         assert shell.run("false", None) == 1
 
+    def test_long_command(self, shell):
+        """The long commands are broken to multiple lines when it is echoed to terminal. This verifies that we can
+        ignore the breakage and math it anyway.
+        """
+        shell.run(" && ".join(["true"] * 20) + " && echo Content")
+        assert shell.output == "Content"
+
     @pytest.fixture
     def test_file(self, shell):
         """This provides test file path that is removed after test finishes."""
@@ -41,13 +48,13 @@ class Common:
     def test_txt_multiline(self, request, shell, test_file):
         """Check for multiline use of txt_write and txt_read."""
         txt = """Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit,
-        sed do eiusmod tempor incididunt ut labore et
-        dolore magna aliqua. Ut enim ad minim veniam,
-        quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-        commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat \
-        nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-        sunt in culpa qui officia deserunt mollit anim id est laborum."""
+consectetur adipiscing elit,
+sed do eiusmod tempor incididunt ut labore et
+dolore magna aliqua. Ut enim ad minim veniam,
+quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla \
+pariatur. Excepteur sint occaecat cupidatat non proident,
+sunt in culpa qui officia deserunt mollit anim id est laborum."""
         shell.txt_write(test_file, txt)
         assert txt == shell.txt_read(test_file)
 

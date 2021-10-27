@@ -20,7 +20,6 @@ class TestStatic(common.InternetTests):
     @pytest.fixture(name="client", scope="class", autouse=True)
     def fixture_client(self, lxd_client, device_map, client_board):
         """Configure WAN to use static IP"""
-        print("We are in client fixture once")
         with nsfarm.lxd.Container(lxd_client, "isp-common", device_map) as container:
             # TODO implement some utility class to set and revert uci configs on router
             client_board.run("uci set network.wan.proto='static'")
