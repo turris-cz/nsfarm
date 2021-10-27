@@ -13,12 +13,6 @@ from . import mark
 
 
 @pytest.mark.deploy
-def test_syslog_ng(client_board):
-    """Check that syslog-ng is running by checking if there is /var/log/messages (default log output)."""
-    client_board.run("[ -f /var/log/messages ]")
-
-
-@pytest.mark.deploy
 @pytest.mark.parametrize(
     "process",
     [
@@ -103,6 +97,13 @@ def test_running_services(client_board, service):
 def test_services(client_board, service):
     """Check that various essential services are enabled."""
     client_board.run(f"/etc/init.d/{service} enabled")
+
+
+@pytest.mark.deploy
+def test_syslog_ng(client_board):
+    """Check that syslog-ng is running by checking if there is /var/log/messages (default log output)."""
+    client_board.run("ls /var/log")
+    client_board.run("[ -f /var/log/messages ]")
 
 
 @pytest.mark.deploy
