@@ -1,28 +1,38 @@
 """Containers management.
 """
+import collections.abc
+import functools
+import logging
 import os
 import typing
-import logging
 import warnings
-import functools
+
 import pexpect
+
 from .. import cli
 from .connection import LXDConnection
-from .image import Image
 from .device import Device
 from .exceptions import LXDDeviceError
+from .image import Image
 from .network import NetworkInterface
 
 logger = logging.getLogger(__package__)
 
 
 class Container:
-    """Generic container handle.
-    """
+    """Generic container handle."""
+
     # TODO log syslog somehow
 
-    def __init__(self, lxd_connection: LXDConnection, image: typing.Union[str, Image], device_map: dict = None,
-                 internet: typing.Optional[bool] = None, strict: bool = True):
+    def __init__(
+        self,
+        lxd_connection: LXDConnection,
+        image: typing.Union[str, Image],
+        device_map: dict = None,
+        internet: typing.Optional[bool] = None,
+        strict: bool = True,
+        name: typing.Optional[str] = None,
+    ):
         self._lxd = lxd_connection
         self._device_map = device_map
         self._override_wants_internet = internet
@@ -31,18 +41,17 @@ class Container:
         self._network = None
 
         self._image = image if isinstance(image, Image) else Image(lxd_connection, image)
-        self._logger = logging.getLogger(f"{__package__}[{self._image.name}]")
+        self._logger = logging.getLogger(f"{__package__}[{self._image.name if name is None else name}]")
 
         self.lxd_container = None
 
     def prepare(self):
-        """Create and start container for this object.
-        """
+        """Create and start container for this object."""
         if self.lxd_container is not None:
             return
 
         # Collect profiles to be assigned to the container
-        profiles = [self._lxd.ROOT_PROFILE, ]
+        profiles = [self._lxd.ROOT_PROFILE]
         if (self._override_wants_internet is None and self._image.wants_internet) or self._override_wants_internet:
             profiles.append(self._lxd.INTERNET_PROFILE)
         # Collect devices to be attached to the container
@@ -58,16 +67,19 @@ class Container:
         self._image.prepare()
 
         # Create and start container
-        self.lxd_container = self._lxd.local.containers.create({
-            'name': self._container_name(),
-            'ephemeral': True,
-            'profiles': profiles,
-            'devices': self._devices,
-            'source': {
-                'type': 'image',
-                'alias': self._image.alias(),
+        self.lxd_container = self._lxd.local.containers.create(
+            {
+                "name": self._container_name(),
+                "ephemeral": True,
+                "profiles": profiles,
+                "devices": self._devices,
+                "source": {
+                    "type": "image",
+                    "alias": self._image.alias(),
+                },
             },
-        }, wait=True)
+            wait=True,
+        )
         self.lxd_container.start(wait=True)
         # Added LXD network class
         self._network = NetworkInterface(self)
@@ -95,12 +107,11 @@ class Container:
         self.lxd_container.stop()
         self.lxd_container = None
 
-    def pexpect(self, command=("/bin/sh",)):
-        """Returns pexpect handle for command running in container.
-        """
+    def pexpect(self, command: collections.abc.Iterable[str] = ("/bin/sh",)) -> pexpect.spawn:
+        """Returns pexpect handle for command running in container."""
         assert self.lxd_container is not None
         self._logger.debug("Running command: %s", command)
-        pexp = pexpect.spawn('lxc', ["exec", self.lxd_container.name] + list(command))
+        pexp = pexpect.spawn("lxc", ["exec", self.lxd_container.name] + list(command))
         pexp.logfile_read = cli.PexpectLogging(logging.getLogger(self._logger.name + str(command)))
         return pexp
 
@@ -114,9 +125,9 @@ class Container:
         """
         return cli.Shell(self.pexpect())
 
-    def get_ip(self,
-               interfaces: typing.Optional[typing.Container] = None,
-               versions: typing.Container = frozenset([4, 6])) -> list:
+    def get_ip(
+        self, interfaces: typing.Optional[typing.Container] = None, versions: typing.Container = frozenset([4, 6])
+    ) -> list:
         """returns list of ipaddress.IP#Interface filtered according to parameters.
 
         interfaces: Container containing string names of interfaces from which ip addresses will be obtained
@@ -141,14 +152,12 @@ class Container:
 
     @property
     def name(self) -> typing.Union[str, None]:
-        """Name of container if prepared, otherwise None.
-        """
+        """Name of container if prepared, otherwise None."""
         return self.lxd_container.name if self.lxd_container is not None else None
 
     @property
     def image(self) -> Image:
-        """Allows access to image used for this container.
-        """
+        """Allows access to image used for this container."""
         return self._image
 
     @property
@@ -162,12 +171,10 @@ class Container:
 
     @property
     def devices(self) -> typing.Tuple[Device]:
-        """Dict of passed devices from host.
-        """
+        """Dict of passed devices from host."""
         return self._devices
 
     @property
     def network(self) -> dict:
-        """network representation, that represents all data connections.
-        """
+        """network representation, that represents all data connections."""
         return self._network
