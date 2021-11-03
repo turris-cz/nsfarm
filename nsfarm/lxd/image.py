@@ -40,11 +40,12 @@ class Image:
             file.readline()  # Skip initial shebang
             parent, *params = file.readline()[1:].strip().split()  # The initial character is '#' we want to ignore
 
-        self._parent = None
-        if parent.startswith("nsfarm:"):
-            self._parent = Image(lxd_connection, parent[7:])
-        elif parent.startswith("images:"):
-            self._parent = self._lxd.images.images.get_by_alias(parent[7:])
+        image_type, image_alias = parent.split(':', maxsplit=1)
+        if image_type == "nsfarm":
+            self._parent = Image(lxd_connection, image_alias)
+        elif image_type == "images":
+            self._parent = self._lxd.local.images.create_from_simplestreams(
+                self._lxd.IMAGES_SOURCE, image_alias, auto_update=True)
         else:
             raise LXDImageParentError(self.name, parent)
 
@@ -162,11 +163,8 @@ class Image:
             self._parent.prepare()
             image_source["alias"] = self._parent.alias()
         else:
-            # We have to pull it from images
-            image_source["mode"] = "pull"
-            image_source["server"] = self._lxd.IMAGES_SOURCE
-            image_source["alias"] = self._parent.fingerprint
-
+            # we have already the image
+            image_source["fingerprint"] = self._parent.fingerprint
         container_name = f"nsfarm-bootstrap-{self.name}-{self.hash()}"
         logger.warning("Bootstrapping image '%s': %s", self.alias(), container_name)
 

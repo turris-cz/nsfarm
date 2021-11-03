@@ -7,7 +7,7 @@ import pylxd
 class LXDConnection:
     """This is generic connection handler for LXD handling both connections to local and images server.
     """
-    IMAGES_SOURCE = "https://images.linuxcontainers.org"
+    IMAGES_SOURCE = "https://images.linuxcontainers.org"  # this is needed for remote access via simplestream
 
     ROOT_PROFILE = "nsfarm-root"
     INTERNET_PROFILE = "nsfarm-internet"
@@ -18,4 +18,3 @@ class LXDConnection:
         logging.getLogger('urllib3').setLevel(logging.ERROR)
 
         self.local = pylxd.Client()
-        self.images = pylxd.Client(self.IMAGES_SOURCE)

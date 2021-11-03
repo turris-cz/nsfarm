@@ -26,16 +26,18 @@ def clean_images(delta: dateutil.relativedelta.relativedelta, dry_run: bool = Fa
 
     removed = []
     for img in connection.local.images.all():
-        if not any(alias["name"].startswith("nsfarm/") for alias in img.aliases):
+        # We remove our images and images without alias as those are pulled images
+        if img.aliases and not any(alias["name"].startswith("nsfarm/") for alias in img.aliases):
             continue
         last_used = dateutil.parser.parse(
             # Special time "0001-01-01T00:00:00Z" means never used so use upload time instead
             img.last_used_at if not img.last_used_at.startswith("0001-01-01") else img.uploaded_at
         ).replace(tzinfo=None)
         if last_used < since:
-            removed.append(img.aliases[0]["name"])
+            name = f"{img.aliases[0]['name']}({img.fingerprint})" if img.aliases else img.fingerprint
+            removed.append(name)
             if not dry_run:
-                logger.warning("Removing image: %s %s", img.aliases[0]["name"], img.fingerprint)
+                logger.warning("Removing image: %s", name)
                 img.delete()
     return removed
 
