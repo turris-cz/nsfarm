@@ -7,6 +7,7 @@ import logging
 import pathlib
 import hashlib
 import functools
+import platform
 import pylxd
 from .connection import LXDConnection
 from .exceptions import LXDImageUndefinedError, LXDImageParentError, LXDImageParameterError
@@ -45,7 +46,7 @@ class Image:
             self._parent = Image(lxd_connection, image_alias)
         elif image_type == "images":
             self._parent = self._lxd.local.images.create_from_simplestreams(
-                self._lxd.IMAGES_SOURCE, image_alias, auto_update=True)
+                self._lxd.IMAGES_SOURCE, image_alias + "/" + self.architecture(), auto_update=True)
         else:
             raise LXDImageParentError(self.name, parent)
 
@@ -210,3 +211,13 @@ class Image:
             container.files.delete(self.IMAGE_INIT_PATH)  # Remove init script
         finally:
             container.stop(wait=True)
+
+    @staticmethod
+    def architecture():
+        arch = platform.machine()
+        archmap = {
+            "x86_64": "amd64",
+        }
+        if arch in archmap:
+            arch = archmap[arch]
+        return arch

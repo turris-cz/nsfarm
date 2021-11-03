@@ -1,5 +1,5 @@
 #!/bin/sh
-# images:openwrt/19.07/amd64
+# images:openwrt/19.07
 ##################################################################################
 # OpenWrt container we can use to test nsfarm as well as cooperation with Turris.
 ##################################################################################
