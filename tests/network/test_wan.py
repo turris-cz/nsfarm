@@ -61,7 +61,7 @@ class TestDHCP(common.InternetTests):
             client_board.run("uci commit network")
 
 
-@pytest.mark.debug
+@pytest.mark.skip("The configuration here removes what is done in fixture board_wan and this removes its revert")
 class TestPPPoE(common.InternetTests):
     """Test of PPPoE
     """
