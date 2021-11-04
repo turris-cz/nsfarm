@@ -3,11 +3,11 @@
 import contextlib
 import subprocess
 import typing
+import pylxd
 
 import selenium.webdriver
 
 from ..lxd import Container as LXDContainer
-from ..lxd import LXDConnection
 
 IMAGE = "selenium"
 
@@ -27,12 +27,12 @@ class Container(LXDContainer):
 
     def __init__(
         self,
-        lxd_connection: LXDConnection,
+        lxd_client: pylxd.Client,
         device_map: dict = None,
         internet: typing.Optional[bool] = None,
         strict: bool = True,
     ):
-        super().__init__(lxd_connection, IMAGE, device_map, internet, strict)
+        super().__init__(lxd_client, IMAGE, device_map, internet, strict)
         self._viewer = None
         self._viewer_port = None
 

@@ -1,9 +1,10 @@
 import sys
 import argparse
+import pylxd
 import subprocess
 import dateutil.relativedelta
 from . import utils
-from . import Container, LXDConnection
+from . import Container
 
 
 def parser(parser):
@@ -148,8 +149,8 @@ def op_inspect(args, parser):
             device, resource = device_spec.split('=', maxsplit=1)
             device_map[device] = resource
 
-    connection = LXDConnection()
-    with Container(connection, args.IMAGE, device_map=device_map, strict=False, **kwargs) as cont:
+    lxd_client = pylxd.Client()
+    with Container(lxd_client, args.IMAGE, device_map=device_map, strict=False, **kwargs) as cont:
         if args.proxy:
             for proxy in args.proxy:
                 el = proxy.split(':', maxsplit=2)
@@ -162,7 +163,6 @@ def op_inspect(args, parser):
                 localport = cont.network.proxy_open(**args)
                 print(f"Proxy '{proxy}' to: {localport}")
         sys.exit(subprocess.call(['lxc', 'exec', cont.name, '/bin/sh']))
-
 
 
 def handle_args(args, parser_ret):

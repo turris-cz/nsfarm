@@ -65,8 +65,8 @@ class TestOpenWrt(Common):
     """These are tests in OpenWrt (ash) shell."""
 
     @pytest.fixture(scope="class", autouse=True)
-    def container(self, lxd_connection):
-        with Container(lxd_connection, "openwrt") as container:
+    def container(self, lxd_client):
+        with Container(lxd_client, "openwrt") as container:
             yield container
 
 
@@ -74,6 +74,6 @@ class TestAlpine(Common):
     """These are tests in Alpine Linux (ash) shell."""
 
     @pytest.fixture(scope="class", autouse=True)
-    def container(self, lxd_connection):
-        with Container(lxd_connection, "base-alpine") as container:
+    def container(self, lxd_client):
+        with Container(lxd_client, "base-alpine") as container:
             yield container

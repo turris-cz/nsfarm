@@ -17,11 +17,11 @@ class TestStatic(common.InternetTests):
     """
 
     @pytest.fixture(name="client", scope="class", autouse=True)
-    def fixture_client(self, lxd, device_map, client_board):
+    def fixture_client(self, lxd_client, device_map, client_board):
         """Configure WAN to use static IP
         """
         print("We are in client fixture once")
-        with nsfarm.lxd.Container(lxd, 'isp-common', device_map) as container:
+        with nsfarm.lxd.Container(lxd_client, 'isp-common', device_map) as container:
             # TODO implement some utility class to set and revert uci configs on router
             client_board.run("uci set network.wan.proto='static'")
             client_board.run("uci set network.wan.ipaddr='172.16.1.42'")
@@ -47,10 +47,10 @@ class TestDHCP(common.InternetTests):
     """
 
     @pytest.fixture(name="client", scope="class", autouse=True)
-    def fixture_client(self, lxd, device_map, client_board):
+    def fixture_client(self, lxd_client, device_map, client_board):
         """Configure WAN to use DHCP
         """
-        with nsfarm.lxd.Container(lxd, 'isp-dhcp', device_map) as container:
+        with nsfarm.lxd.Container(lxd_client, 'isp-dhcp', device_map) as container:
             client_board.run("uci set network.wan.proto='dhcp'")
             client_board.run("uci commit network")
             container.shell.run('wait4network')
@@ -67,8 +67,8 @@ class TestPPPoE(common.InternetTests):
     """
 
     @pytest.fixture(name="client", scope="class", autouse=True)
-    def fixture_client(self, lxd, device_map, client_board):
-        with nsfarm.lxd.Container(lxd, 'isp-pppoe', device_map) as container:
+    def fixture_client(self, lxd_client, device_map, client_board):
+        with nsfarm.lxd.Container(lxd_client, 'isp-pppoe', device_map) as container:
             client_board.run("uci set network.wan.proto='pppoe'")
             client_board.run("uci set network.wan.username='turris'")
             client_board.run("uci set network.wan.password='turris'")

@@ -2,7 +2,7 @@ import time
 import random
 import string
 import pytest
-import warnings
+import pylxd
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
@@ -81,11 +81,11 @@ def fixture_board(request):
     brd.power(False)
 
 
-@pytest.fixture(name="lxd", scope="session")
-def fixture_lxd():
-    """Provides access to nsfarm.lxd.LXDConnection instance.
+@pytest.fixture(name="lxd_client", scope="session")
+def fixture_lxd_client():
+    """Provides access to pylxd.Client() instance.
     """
-    return nsfarm.lxd.LXDConnection()
+    return pylxd.Client()
 
 
 @pytest.fixture(name="device_map", scope="session")
@@ -99,12 +99,12 @@ def fixture_device_map(request):
 # Boot and setup fixtures ##############################################################################################
 
 @pytest.fixture(name="board_serial", scope="package")
-def fixture_board_serial(request, lxd, board):
+def fixture_board_serial(lxd_client, request, board):
     """Boot board to Shell.
     Provides instance of nsfarm.cli.Shell()
     """
     request.addfinalizer(lambda: board.reset(True))
-    return board.bootup(lxd, request.config.target_branch)
+    return board.bootup(lxd_client, request.config.target_branch)
 
 
 @pytest.fixture(name="board_root_password", scope="package")
@@ -146,28 +146,28 @@ def fixture_client_board(board, board_serial, board_root_password, lan1_client):
 # Common containers ####################################################################################################
 
 @pytest.fixture(name="isp_container", scope="package")
-def fixture_isp_container(lxd, device_map):
+def fixture_isp_container(lxd_client, device_map):
     """Minimal ISP container used to provide the Internet access for the most of the tests.
     """
-    with nsfarm.lxd.Container(lxd, 'isp-common', device_map) as container:
+    with nsfarm.lxd.Container(lxd_client, 'isp-common', device_map) as container:
         container.shell.run('wait4network')
         yield container
 
 
 @pytest.fixture(name="lan1_client", scope="package")
-def fixture_lan1_client(lxd, device_map):
+def fixture_lan1_client(lxd_client, device_map):
     """Starts client container with static IP address 192.168.1.10/24 on LAN1 and provides it.
     """
-    with nsfarm.lxd.Container(lxd, 'client', {"net:lan": device_map["net:lan1"]}) as container:
+    with nsfarm.lxd.Container(lxd_client, 'client', {"net:lan": device_map["net:lan1"]}) as container:
         container.shell.run('wait4boot')
         yield container
 
 
 @pytest.fixture(name="lan1_webclient", scope="package")
-def fixture_lan1_webclient(lxd, device_map):
+def fixture_lan1_webclient(lxd_client, device_map):
     """Starts web-client container on LAN1 and provides it.
     """
-    with nsfarm.web.Container(lxd, {"net:lan": device_map["net:lan1"]}) as container:
+    with nsfarm.web.Container(lxd_client, {"net:lan": device_map["net:lan1"]}) as container:
         container.shell.run('wait4boot')
         yield container
 

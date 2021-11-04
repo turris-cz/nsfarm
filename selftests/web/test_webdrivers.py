@@ -6,10 +6,10 @@ from nsfarm.web import Container, BROWSERS
 
 
 @pytest.fixture(name="webcontainer", scope="module")
-def fixture_webcontainer(lxd_connection):
+def fixture_webcontainer(lxd_client):
     """Provides nsfarm.web.Container instance.
     """
-    with Container(lxd_connection, internet=True, strict=False) as container:
+    with Container(lxd_client, internet=True, strict=False) as container:
         yield container
 
 

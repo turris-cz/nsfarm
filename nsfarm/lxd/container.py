@@ -6,11 +6,11 @@ import logging
 import os
 import typing
 import warnings
+import pylxd
 
 import pexpect
 
-from .. import cli
-from .connection import LXDConnection
+from .. import cli, lxd
 from .device import Device
 from .exceptions import LXDDeviceError
 from .image import Image
@@ -26,21 +26,21 @@ class Container:
 
     def __init__(
         self,
-        lxd_connection: LXDConnection,
+        lxd_client: pylxd.Client,
         image: typing.Union[str, Image],
         device_map: dict = None,
         internet: typing.Optional[bool] = None,
         strict: bool = True,
         name: typing.Optional[str] = None,
     ):
-        self._lxd = lxd_connection
+        self._lxd = lxd_client
         self._device_map = device_map
         self._override_wants_internet = internet
         self._strict = strict
         self._devices = dict()
         self._network = None
 
-        self._image = image if isinstance(image, Image) else Image(lxd_connection, image)
+        self._image = image if isinstance(image, Image) else Image(self._lxd, image)
         self._logger = logging.getLogger(f"{__package__}[{self._image.name if name is None else name}]")
 
         self.lxd_container = None
@@ -51,9 +51,9 @@ class Container:
             return
 
         # Collect profiles to be assigned to the container
-        profiles = [self._lxd.ROOT_PROFILE]
+        profiles = [lxd.PROFILE_ROOT]
         if (self._override_wants_internet is None and self._image.wants_internet) or self._override_wants_internet:
-            profiles.append(self._lxd.INTERNET_PROFILE)
+            profiles.append(lxd.PROFILE_INTERNET)
         # Collect devices to be attached to the container
         for name, device in self._image.devices().items():
             dev = device.acquire(self._device_map)
@@ -67,7 +67,7 @@ class Container:
         self._image.prepare()
 
         # Create and start container
-        self.lxd_container = self._lxd.local.containers.create(
+        self.lxd_container = self._lxd.containers.create(
             {
                 "name": self._container_name(),
                 "ephemeral": True,
@@ -90,7 +90,7 @@ class Container:
         # cleanup algorithm). Make sure that you update them when you do changes in this code.
         name = f"{prefix}-{self._image.name}-{os.getpid()}"
         i = 1
-        while self._lxd.local.containers.exists(f"{name}x{i}"):
+        while self._lxd.containers.exists(f"{name}x{i}"):
             i += 1
         name = f"{name}x{i}"
         return name

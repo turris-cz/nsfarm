@@ -4,7 +4,7 @@ import os
 import logging
 from datetime import datetime
 import dateutil.parser
-from .connection import LXDConnection
+import pylxd
 from .container import Container
 from .image import Image
 
@@ -21,11 +21,11 @@ def clean_images(delta: dateutil.relativedelta.relativedelta, dry_run: bool = Fa
 
     Returns list of (to be) removed images.
     """
-    connection = LXDConnection()
+    lxd_client = pylxd.Client()
     since = datetime.today() - delta
 
     removed = []
-    for img in connection.local.images.all():
+    for img in lxd_client.images.all():
         # We remove our images and images without alias as those are pulled images
         if img.aliases and not any(alias["name"].startswith("nsfarm/") for alias in img.aliases):
             continue
@@ -57,11 +57,11 @@ def clean_containers(dry_run=False):
 
     Returns list of (to be) removed containers.
     """
-    connection = LXDConnection()
+    lxd_client = pylxd.Client()
     since = datetime.today() - BOOTSTRAP_LIMIT
 
     removed = []
-    for cont in connection.local.instances.all():
+    for cont in lxd_client.instances.all():
         if not cont.name.startswith("nsfarm-"):
             continue
         if cont.name.startswith("nsfarm-bootstrap-"):
@@ -95,7 +95,7 @@ def all_images():
     return (imgf[:-3] for imgf in os.listdir(Image.IMGS_DIR) if imgf.endswith(".sh"))
 
 
-def bootstrap(imgs=None):
+def bootstrap(lxd_client, imgs=None):
     """Bootstrap all defined images.
 
     imgs: list of images to bootstrap
@@ -103,8 +103,7 @@ def bootstrap(imgs=None):
     Returns True if all images were bootstrapped correctly.
     """
     success = True
-    connection = LXDConnection()
     for img in all_images() if imgs is None else imgs:
         logger.info("Trying to bootstrap: %s", img)
-        Image(connection, img).prepare()
+        Image(lxd_client, img).prepare()
     return success

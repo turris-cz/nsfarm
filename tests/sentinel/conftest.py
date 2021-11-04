@@ -20,11 +20,11 @@ def fixture_sentinel(request, board_wan, updater_branch,  client_board):
 
 
 @pytest.fixture(scope="module", name="attacker_container")
-def fixture_attacker_container(lxd, device_map):
+def fixture_attacker_container(lxd_client, device_map):
     """Container serving as an attacker from the Internet. In this case it is in the same network as ISP but that is
     intentional as this way we won't poison data that much even if we send them to Sentinel network.
     """
-    with Container(lxd, 'attacker', device_map) as container:
+    with Container(lxd_client, 'attacker', device_map) as container:
         container.shell.run('wait4boot')
         yield container
 

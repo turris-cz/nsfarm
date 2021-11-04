@@ -44,13 +44,14 @@ class DHCPv4Common(abc.ABC):
         return [iface.ip for iface in sum([client.get_ip(['lan'], [4]) for client in dhcp_clients], [])]
 
     @pytest.fixture(name="dhcp_clients", scope="class")
-    def fixture_dhcp_clients(self, lxd, device_map):
+    def fixture_dhcp_clients(self, lxd_client, device_map):
         """fixture starts specific number of clients on lan1 and returns them in list
         """
         cont = "client-dhcp"
         dev_map = {"net:lan": device_map["net:lan1"]}
         with contextlib.ExitStack() as stack:
-            yield [stack.enter_context(nsfarm.lxd.Container(lxd, cont, dev_map)) for _ in range(self.nof_clients)]
+            yield [stack.enter_context(nsfarm.lxd.Container(lxd_client, cont, dev_map))
+                   for _ in range(self.nof_clients)]
 
     @pytest.fixture(name="save_dhcp_settings", scope="module")
     def fixture_save_dhcp_settings(self, client_board):

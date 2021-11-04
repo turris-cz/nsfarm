@@ -1,7 +1,7 @@
 import pytest
-from nsfarm import lxd
+import pylxd
 
 
-@pytest.fixture(name="lxd_connection", scope="package")
-def fixture_lxd_connection():
-    return lxd.LXDConnection()
+@pytest.fixture(name="lxd_client", scope="package")
+def fixture_lxd_client():
+    return pylxd.Client()

@@ -6,11 +6,11 @@ from nsfarm.cli import Shell
 from .test_image import BASE_IMG
 
 
-@pytest.fixture(scope="module")
-def container(lxd_connection):
+@pytest.fixture(name="container", scope="module")
+def fixture_container(lxd_client):
     """Base container to be used for testing.
     """
-    with Container(lxd_connection, BASE_IMG, internet=True) as cont:
+    with Container(lxd_client, BASE_IMG, internet=True) as cont:
         shell = Shell(cont.pexpect())
         shell.run("wait4network")
         yield shell

@@ -9,9 +9,9 @@ import hashlib
 import functools
 import platform
 import pylxd
-from .connection import LXDConnection
 from .exceptions import LXDImageUndefinedError, LXDImageParentError, LXDImageParameterError
 from .device import Device, NetInterface, CharDevice
+from .. import lxd
 
 logger = logging.getLogger(__package__)
 
@@ -22,9 +22,9 @@ class Image:
     IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
     IMGS_DIR = pathlib.Path(__file__).parents[2] / "imgs"
 
-    def __init__(self, lxd_connection: LXDConnection, img_name: str):
+    def __init__(self, lxd_client: pylxd.Client, img_name: str):
         self.name = img_name
-        self._lxd = lxd_connection
+        self._lxd = lxd_client
         self._dir_path = self.IMGS_DIR / img_name
         self._file_path = self._dir_path.with_suffix(self._dir_path.suffix + ".sh")
 
@@ -43,10 +43,10 @@ class Image:
 
         image_type, image_alias = parent.split(':', maxsplit=1)
         if image_type == "nsfarm":
-            self._parent = Image(lxd_connection, image_alias)
+            self._parent = Image(self._lxd, image_alias)
         elif image_type == "images":
-            self._parent = self._lxd.local.images.create_from_simplestreams(
-                self._lxd.IMAGES_SOURCE, image_alias + "/" + self.architecture(), auto_update=True)
+            self._parent = self._lxd.images.create_from_simplestreams(
+                lxd.IMAGE_REPO, image_alias + "/" + self.architecture(), auto_update=True)
         else:
             raise LXDImageParentError(self.name, parent)
 
@@ -143,7 +143,7 @@ class Image:
 
         img_hash: specific hash (not latest one) to be checked.
         """
-        return self._lxd.local.images.exists(self.alias(img_hash), alias=True)
+        return self._lxd.images.exists(self.alias(img_hash), alias=True)
 
     def prepare(self):
         """Prepare image. It creates it if necessary and populates lxd_image attribute.
@@ -151,7 +151,7 @@ class Image:
         if self.lxd_image is not None:
             return
         if self.is_prepared(self.hash()):
-            self.lxd_image = self._lxd.local.images.get_by_alias(self.alias())
+            self.lxd_image = self._lxd.images.get_by_alias(self.alias())
             return
 
         logger.debug("Want to bootstrap image: %s", self.alias())
@@ -170,7 +170,7 @@ class Image:
         logger.warning("Bootstrapping image '%s': %s", self.alias(), container_name)
 
         try:
-            container = self._lxd.local.containers.create({
+            container = self._lxd.containers.create({
                 'name': container_name,
                 'profiles': ['nsfarm-root', 'nsfarm-internet'],
                 'source': image_source
@@ -180,7 +180,7 @@ class Image:
                 raise
             logger.warning("Other instance is already bootsrapping image probably. "
                            "Waiting for following container to go away: %s", container_name)
-            while self._lxd.local.containers.exists(container_name):
+            while self._lxd.containers.exists(container_name):
                 time.sleep(1)
             self.prepare()  # possibly get created image or try again
             return
