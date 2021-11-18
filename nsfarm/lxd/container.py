@@ -111,7 +111,7 @@ class Container:
         """Returns pexpect handle for command running in container."""
         assert self.lxd_container is not None
         self._logger.debug("Running command: %s", command)
-        pexp = pexpect.spawn("lxc", ["exec", self.lxd_container.name] + list(command))
+        pexp = pexpect.spawn("lxc", ["exec", self.lxd_container.name, "--"] + list(command))
         pexp.logfile_read = cli.PexpectLogging(logging.getLogger(self._logger.name + str(command)))
         return pexp
 
