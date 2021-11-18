@@ -5,8 +5,7 @@ from ..target.target import Target as _Target
 
 
 def get_board(target_config: _Target):
-    """Function which instantiates correct board class depending on target_config.
-    """
+    """Function which instantiates correct board class depending on target_config."""
     boards = {
         "mox": Mox,
         "omnia": Omnia,

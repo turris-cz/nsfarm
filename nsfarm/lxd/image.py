@@ -9,7 +9,11 @@ import hashlib
 import functools
 import platform
 import pylxd
-from .exceptions import LXDImageUndefinedError, LXDImageParentError, LXDImageParameterError
+from .exceptions import (
+    LXDImageUndefinedError,
+    LXDImageParentError,
+    LXDImageParameterError,
+)
 from .device import Device, NetInterface, CharDevice
 from .. import lxd
 
@@ -17,8 +21,8 @@ logger = logging.getLogger(__package__)
 
 
 class Image:
-    """Generic Image handle.
-    """
+    """Generic Image handle."""
+
     IMAGE_INIT_PATH = "/nsfarm-init.sh"  # Where we deploy initialization script for image
     IMGS_DIR = pathlib.Path(__file__).parents[2] / "imgs"
 
@@ -41,12 +45,15 @@ class Image:
             file.readline()  # Skip initial shebang
             parent, *params = file.readline()[1:].strip().split()  # The initial character is '#' we want to ignore
 
-        image_type, image_alias = parent.split(':', maxsplit=1)
+        image_type, image_alias = parent.split(":", maxsplit=1)
         if image_type == "nsfarm":
             self._parent = Image(self._lxd, image_alias)
         elif image_type == "images":
             self._parent = self._lxd.images.create_from_simplestreams(
-                lxd.IMAGE_REPO, image_alias + "/" + self.architecture(), auto_update=True)
+                lxd.IMAGE_REPO,
+                image_alias + "/" + self.architecture(),
+                auto_update=True,
+            )
         else:
             raise LXDImageParentError(self.name, parent)
 
@@ -57,9 +64,9 @@ class Image:
         }
         self._devices = dict()
         for param in params:
-            split_param = param.split(':', maxsplit=1)
-            negate = split_param[0][0] == '!'
-            devtype = split_param[0].lstrip('!')
+            split_param = param.split(":", maxsplit=1)
+            negate = split_param[0][0] == "!"
+            devtype = split_param[0].lstrip("!")
             value = split_param[1] if len(split_param) > 1 else None
             if devtype in attributes:
                 if not negate:
@@ -70,7 +77,9 @@ class Image:
                 raise LXDImageParameterError(self.name, param)
 
         self._wants_internet = self._devices.pop(
-            "internet", self._parent.wants_internet if isinstance(self._parent, Image) else False)
+            "internet",
+            self._parent.wants_internet if isinstance(self._parent, Image) else False,
+        )
 
     @functools.lru_cache(maxsize=1)
     def hash(self) -> str:
@@ -134,8 +143,7 @@ class Image:
 
     @property
     def wants_internet(self) -> bool:
-        """If container based on this image should have access to the Internet.
-        """
+        """If container based on this image should have access to the Internet."""
         return self._wants_internet
 
     def is_prepared(self, img_hash: str = None) -> bool:
@@ -146,8 +154,7 @@ class Image:
         return self._lxd.images.exists(self.alias(img_hash), alias=True)
 
     def prepare(self):
-        """Prepare image. It creates it if necessary and populates lxd_image attribute.
-        """
+        """Prepare image. It creates it if necessary and populates lxd_image attribute."""
         if self.lxd_image is not None:
             return
         if self.is_prepared(self.hash()):
@@ -157,7 +164,7 @@ class Image:
         logger.debug("Want to bootstrap image: %s", self.alias())
 
         image_source = {
-            'type': 'image',
+            "type": "image",
         }
         if isinstance(self._parent, Image):
             # We have NSFarm image to base on
@@ -170,16 +177,22 @@ class Image:
         logger.warning("Bootstrapping image '%s': %s", self.alias(), container_name)
 
         try:
-            container = self._lxd.containers.create({
-                'name': container_name,
-                'profiles': ['nsfarm-root', 'nsfarm-internet'],
-                'source': image_source
-            }, wait=True)
+            container = self._lxd.containers.create(
+                {
+                    "name": container_name,
+                    "profiles": ["nsfarm-root", "nsfarm-internet"],
+                    "source": image_source,
+                },
+                wait=True,
+            )
         except pylxd.exceptions.LXDAPIException as elxd:
             if not str(elxd).endswith("already exists"):
                 raise
-            logger.warning("Other instance is already bootsrapping image probably. "
-                           "Waiting for following container to go away: %s", container_name)
+            logger.warning(
+                "Other instance is already bootsrapping image probably. "
+                "Waiting for following container to go away: %s",
+                container_name,
+            )
             while self._lxd.containers.exists(container_name):
                 time.sleep(1)
             self.prepare()  # possibly get created image or try again

@@ -31,7 +31,9 @@ def clean_images(delta: dateutil.relativedelta.relativedelta, dry_run: bool = Fa
             continue
         last_used = dateutil.parser.parse(
             # Special time "0001-01-01T00:00:00Z" means never used so use upload time instead
-            img.last_used_at if not img.last_used_at.startswith("0001-01-01") else img.uploaded_at
+            img.last_used_at
+            if not img.last_used_at.startswith("0001-01-01")
+            else img.uploaded_at
         ).replace(tzinfo=None)
         if last_used < since:
             name = f"{img.aliases[0]['name']}({img.fingerprint})" if img.aliases else img.fingerprint
@@ -75,7 +77,7 @@ def clean_containers(dry_run=False):
         else:
             # Container have PID of process they are spawned by in the name. We can't safely remove any container
             # without running owner process.
-            pid = int(cont.name.split('-')[-1].split('x')[0])
+            pid = int(cont.name.split("-")[-1].split("x")[0])
             try:
                 os.kill(pid, 0)
             except OSError as err:

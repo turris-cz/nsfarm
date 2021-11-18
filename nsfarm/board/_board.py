@@ -14,8 +14,7 @@ from ..target.target import Target
 
 
 class Board(abc.ABC):
-    """General abstract class defining handle for board.
-    """
+    """General abstract class defining handle for board."""
 
     def __init__(self, target_config: Target):
         self.config = target_config
@@ -30,8 +29,7 @@ class Board(abc.ABC):
 
     @property
     def pexpect(self):
-        """pexpect handle to serial TTY interface.
-        """
+        """pexpect handle to serial TTY interface."""
         return self._pexpect
 
     def set_serial_flush(self, flush: bool):
@@ -46,13 +44,11 @@ class Board(abc.ABC):
             cli.pexpect_flush(self._pexpect)
 
     def power(self, state):
-        """Set power state.
-        """
+        """Set power state."""
         self._serial.cst = state
 
     def reset(self, state):
-        """Set reset pin state.
-        """
+        """Set reset pin state."""
         self._serial.rts = state
 
     def uboot(self):
@@ -65,7 +61,7 @@ class Board(abc.ABC):
         time.sleep(0.001)
         self.reset(False)
         # Now wait for U-Boot hint to get CLI
-        self._pexpect.expect_exact(["Hit any key to stop autoboot: ", ])
+        self._pexpect.expect_exact("Hit any key to stop autoboot: ")
         self._pexpect.sendline("")
         return cli.Uboot(self._pexpect)
 
@@ -82,11 +78,11 @@ class Board(abc.ABC):
         with Container(lxd_client, "boot", self.config.device_map()) as cont:
             ccli = cli.Shell(cont.pexpect())
             ccli.run(f"prepare_turris_image '{os_branch}'", timeout=120)
-            uboot.run('setenv ipaddr 192.168.1.142')
-            uboot.run('setenv serverip 192.168.1.1')
+            uboot.run("setenv ipaddr 192.168.1.142")
+            uboot.run("setenv serverip 192.168.1.1")
             self._board_bootup(uboot)
         # Wait for bootup
-        self._pexpect.expect_exact(["Router Turris successfully started.", ], timeout=240)
+        self._pexpect.expect_exact("Router Turris successfully started.", timeout=240)
         # Note Shell sends new line which opens terminal for it
         shell = cli.Shell(self._pexpect)
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
@@ -101,8 +97,7 @@ class Board(abc.ABC):
 
     @abc.abstractproperty
     def wan(self):
-        """Network interface name for WAN interface in router
-        """
+        """Network interface name for WAN interface in router"""
 
     @abc.abstractproperty
     def lan1(self):

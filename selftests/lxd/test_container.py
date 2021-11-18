@@ -5,8 +5,7 @@ from .test_image import BASE_IMG
 
 
 def test_new_container(lxd_client):
-    """Try to create container for BASE_IMG.
-    """
+    """Try to create container for BASE_IMG."""
     container = Container(lxd_client, BASE_IMG)
     assert isinstance(container.image, Image)
     assert container.image.name == BASE_IMG
@@ -16,8 +15,7 @@ def test_new_container(lxd_client):
 
 
 def test_new_container_image(lxd_client):
-    """Try to create container for BASE_IMG using Image instance.
-    """
+    """Try to create container for BASE_IMG using Image instance."""
     image = Image(lxd_client, BASE_IMG)
     container = Container(lxd_client, image)
     assert isinstance(container.image, Image)
@@ -26,8 +24,7 @@ def test_new_container_image(lxd_client):
 
 
 def test_start_stop(lxd_client):
-    """Prepare and cleanup container and check that it really creates and removes container.
-    """
+    """Prepare and cleanup container and check that it really creates and removes container."""
     container = Container(lxd_client, BASE_IMG)
     assert container.name is None
     container.prepare()
@@ -46,8 +43,7 @@ def test_start_stop(lxd_client):
 
 
 def test_context(lxd_client):
-    """Check if we can correctly work with context.
-    """
+    """Check if we can correctly work with context."""
     with Container(lxd_client, BASE_IMG) as container:
         container.prepare()
         assert lxd_client.containers.exists(container.name)

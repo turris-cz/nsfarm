@@ -10,14 +10,22 @@ import logging
 import warnings
 
 
-EXIT_CHAR = b'\x1d'
+EXIT_CHAR = b"\x1d"
 
 
 def _setup_stdin():
     # Set terminal to raw mode. This is technically an implementation of cfmakeraw function.
     new_tio = termios.tcgetattr(sys.stdin)
-    new_tio[0] &= ~(termios.IGNBRK | termios.BRKINT | termios.PARMRK | termios.ISTRIP | termios.INLCR | termios.IGNCR |
-                    termios.ICRNL | termios.IXON)
+    new_tio[0] &= ~(
+        termios.IGNBRK
+        | termios.BRKINT
+        | termios.PARMRK
+        | termios.ISTRIP
+        | termios.INLCR
+        | termios.IGNCR
+        | termios.ICRNL
+        | termios.IXON
+    )
     new_tio[1] &= ~termios.OPOST
     new_tio[2] &= ~(termios.CSIZE | termios.PARENB)
     new_tio[2] |= termios.CS8
@@ -26,8 +34,7 @@ def _setup_stdin():
 
 
 def mterm(fileno: int):
-    """Run micro terminal.
-    """
+    """Run micro terminal."""
     if not sys.stdin.isatty():
         warnings.warn("Microterm works only if stdin is directly the terminal.", RuntimeWarning)
         return
@@ -41,7 +48,7 @@ def mterm(fileno: int):
         fcntl.fcntl(fileno, fcntl.F_SETFL, orig_filestatus | os.O_NONBLOCK)
         output = {
             sys.stdin.fileno(): fileno,
-            fileno: sys.stdout.fileno()
+            fileno: sys.stdout.fileno(),
         }
         poll = select.poll()
         poll.register(sys.stdin.fileno(), select.POLLIN)

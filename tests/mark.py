@@ -28,7 +28,6 @@ otp = pytest.mark.board("mox")
 
 
 def register_marks(config):
-    """Registers all tests specific markers.
-    """
+    """Registers all tests specific markers."""
     for mark in MARKERS:
         config.addinivalue_line("markers", mark)

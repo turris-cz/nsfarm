@@ -7,8 +7,7 @@ from .test_net import STEP
 
 @pytest.fixture(name="workflow", autouse=True, params=["router", "min", "bridge"])
 def fixture_workflow(request, client_board):
-    """Select workflow.
-    """
+    """Select workflow."""
     cmds = [
         "uci set foris.wizard=config",
         "uci add_list foris.wizard.passed=password",
@@ -22,26 +21,21 @@ def fixture_workflow(request, client_board):
             "uci add_list foris.wizard.passed=dns",
             "uci add_list foris.wizard.passed=updater",
         ]
-    cmds += [
-        f"uci set foris.wizard.workflow='{request.param}'",
-        "uci commit foris"
-    ]
+    cmds += [f"uci set foris.wizard.workflow='{request.param}'", "uci commit foris"]
     client_board.run(" && ".join(cmds))
     return request.param
     # The revert is performed by fixture reset_guide
 
 
 def test_index(webdriver, screenshot):
-    """Check that new page redirects us to correct DNS configuration.
-    """
-    webdriver.get('http://192.168.1.1')
+    """Check that new page redirects us to correct DNS configuration."""
+    webdriver.get("http://192.168.1.1")
     reforis.guide.Finished(webdriver).verify()
     screenshot(webdriver, "index", "Index page when guide is finished.")
 
 
 def test_finish(client_board, webdriver):
-    """Just click continue.
-    """
+    """Just click continue."""
     reforis.guide.Guide(webdriver).go()
     reforis.guide.Finished(webdriver).cont.click()
 

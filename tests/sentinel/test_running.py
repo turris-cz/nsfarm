@@ -15,14 +15,12 @@ sentinel_services = [
 @pytest.mark.deploy
 @pytest.mark.parametrize("service", sentinel_services)
 def test_service_running(client_board, service):
-    """Check if expected processes we need for Sentinel are running and thus all should be correctly configured.
-    """
+    """Check if expected processes we need for Sentinel are running and thus all should be correctly configured."""
     assert service_is_running(service, client_board)
 
 
 @pytest.mark.deploy
 @pytest.mark.parametrize("service", sentinel_services)
 def test_service_enabled(client_board, service):
-    """Check if expected processes we need for Sentinel are running and thus all should be correctly configured.
-    """
+    """Check if expected processes we need for Sentinel are running and thus all should be correctly configured."""
     client_board.run(f"/etc/init.d/{service} enabled")

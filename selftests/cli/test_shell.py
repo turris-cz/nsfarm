@@ -22,15 +22,18 @@ class Common:
 
     @pytest.fixture
     def test_file(self, shell):
-        """This provides test file path that is removed after test finishes.
-        """
+        """This provides test file path that is removed after test finishes."""
         path = "/tmp/test-file"
         yield path
         shell.run(f"rm -f '{path}'")
 
     def test_txt(self, request, shell, test_file):
         """Check for simple use of txt_write and txt_read."""
-        txt = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        txt = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et \
+            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex \
+            ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu \
+            fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt \
+            mollit anim id est laborum."
         shell.txt_write(test_file, txt)
         assert txt == shell.txt_read(test_file)
 
@@ -41,7 +44,8 @@ class Common:
         sed do eiusmod tempor incididunt ut labore et
         dolore magna aliqua. Ut enim ad minim veniam,
         quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-        commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+        commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat \
+        nulla pariatur. Excepteur sint occaecat cupidatat non proident,
         sunt in culpa qui officia deserunt mollit anim id est laborum."""
         shell.txt_write(test_file, txt)
         assert txt == shell.txt_read(test_file)
@@ -56,7 +60,7 @@ class Common:
 
     def test_bin(self, request, shell, test_file):
         """Check if txt_read append option works as expected."""
-        data = b'\x01\x02\x03\x04\x05'
+        data = b"\x01\x02\x03\x04\x05"
         shell.bin_write(test_file, data)
         assert data == shell.bin_read(test_file)
 

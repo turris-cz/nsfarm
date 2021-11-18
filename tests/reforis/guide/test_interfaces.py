@@ -39,7 +39,11 @@ def test_save_and_next(client_board, webdriver, screenshot, workflow):
     reforis.network.Interfaces(webdriver).save.click()
 
     guide.wait4ready()
-    screenshot(webdriver, f"interfaces:{workflow}", f"Interfaces saved for workflow: {workflow}")
+    screenshot(
+        webdriver,
+        f"interfaces:{workflow}",
+        f"Interfaces saved for workflow: {workflow}",
+    )
 
     client_board.run("uci get foris.wizard.passed")
     assert "networks" in client_board.output.split()

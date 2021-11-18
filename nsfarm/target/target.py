@@ -9,42 +9,41 @@ import collections.abc
 TARGET_CONFS = (
     "/etc/nsfarm_targets.ini",
     "~/.nsfarm_targets.ini",
-    "./targets.ini"
+    "./targets.ini",
 )
 
 BOARDS = (
     "mox",
     "omnia",
-    "turris1x"
+    "turris1x",
 )
 
 
 class Target:
-    """Target configuration handler.
-    """
+    """Target configuration handler."""
 
     def __init__(self, name, conf):
         self._name = name
         self._conf = conf
 
     def check(self) -> bool:
-        """Verify if target is correctly configured.
-        """
+        """Verify if target is correctly configured."""
         return bool(
-            self.board and self.board in BOARDS and
-            self.serial_number and len(self.serial_number) == 16 and
-            self.serial and
-            self.wan
+            self.board
+            and self.board in BOARDS
+            and self.serial_number
+            and len(self.serial_number) == 16
+            and self.serial
+            and self.wan
         )
 
     def is_available(self) -> bool:
-        """Verify if target is present on system. This means if resources it specifies are all available.
-        """
+        """Verify if target is present on system. This means if resources it specifies are all available."""
         return bool(
-            (not self.serial or pathlib.Path(self.serial).exists()) and
-            self._netlink_present(self.wan) and
-            self._netlink_present(self.lan1) and
-            self._netlink_present(self.lan2)
+            (not self.serial or pathlib.Path(self.serial).exists())
+            and self._netlink_present(self.wan)
+            and self._netlink_present(self.lan1)
+            and self._netlink_present(self.lan2)
         )
 
     @staticmethod
@@ -53,54 +52,45 @@ class Target:
 
     @property
     def name(self) -> str:
-        """Name of target.
-        """
+        """Name of target."""
         return self._name
 
     @property
     def board(self) -> str:
-        """Target board. It can be one of: omnia
-        """
+        """Target board. It can be one of: omnia"""
         return self._conf.get("board")
 
     @property
     def serial_number(self) -> str:
-        """Serial number of target board.
-        """
+        """Serial number of target board."""
         return self._conf.get("serial_number")
 
     @property
     def serial(self) -> str:
-        """Serial interface connected to target board.
-        """
+        """Serial interface connected to target board."""
         return self._conf.get("serial")
 
     @property
     def wan(self) -> str:
-        """Interface connected to WAN port of target board.
-        """
+        """Interface connected to WAN port of target board."""
         return self._conf.get("wan")
 
     @property
     def lan1(self) -> str:
-        """Interface connected to one of LAN ports of target board.
-        """
+        """Interface connected to one of LAN ports of target board."""
         return self._conf.get("lan1")
 
     @property
     def lan2(self) -> str:
-        """Interface connected to one of LAN ports of target board.
-        """
+        """Interface connected to one of LAN ports of target board."""
         return self._conf.get("lan2")
 
     def is_configured(self, name) -> bool:
-        """Check if given field is configured.
-        """
+        """Check if given field is configured."""
         return name in self._conf
 
     def device_map(self):
-        """Provides full device map for all devices for LXD containers.
-        """
+        """Provides full device map for all devices for LXD containers."""
         return {
             "net:wan": self.wan,
             "net:lan1": self.lan1,
@@ -116,8 +106,7 @@ class Target:
 
 
 class Targets(collections.abc.Mapping):
-    """All available NSFarm targets.
-    """
+    """All available NSFarm targets."""
 
     def __init__(self, additional: typing.Iterable[str] = frozenset(), rootdir: str = "."):
         self._rootdir = pathlib.Path(rootdir)

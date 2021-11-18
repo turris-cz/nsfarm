@@ -3,21 +3,19 @@
 import abc
 import pytest
 from nsfarm.cli import CTRL_D
+
 # pylint: disable=unused-argument
 
 
 class GenericMinipot(abc.ABC):
-    """Generic test definition for minipot.
-    """
+    """Generic test definition for minipot."""
 
     @abc.abstractstaticmethod
     def access(attacker_container, attacker, board_wan):
-        """Try if we can access service.
-        """
+        """Try if we can access service."""
 
     def test_simple_connect(self, attacker_container, attacker, board_wan):
-        """Checks if we can access telnet.
-        """
+        """Checks if we can access telnet."""
         self.access(attacker_container, attacker, board_wan)
 
     def test_blocked_connect(self, attacker_container, attacker, board_wan, dynfw_block_attacker):
@@ -28,8 +26,7 @@ class GenericMinipot(abc.ABC):
 
 
 class TestTelnet(GenericMinipot):
-    """Telnet minipot access tests.
-    """
+    """Telnet minipot access tests."""
 
     @staticmethod
     def access(attacker_container, attacker, board_wan):
@@ -39,19 +36,18 @@ class TestTelnet(GenericMinipot):
 
 
 class TestFTP(GenericMinipot):
-    """FTP minipot access tests.
-    """
+    """FTP minipot access tests."""
 
     @staticmethod
     def access(attacker_container, attacker, board_wan):
         attacker.run(f"ncftp -u nsfarm -p nsfarm '{board_wan}' </dev/null")
-        assert \
+        assert (
             f"Could not open host {board_wan}: username and/or password was not accepted for login." in attacker.output
+        )
 
 
 class TestHTTP(GenericMinipot):
-    """HTTP minipot access tests.
-    """
+    """HTTP minipot access tests."""
 
     @staticmethod
     def access(attacker_container, attacker, board_wan):
@@ -60,8 +56,7 @@ class TestHTTP(GenericMinipot):
 
 
 class TestSMTP(GenericMinipot):
-    """SMTP minipot access tests.
-    """
+    """SMTP minipot access tests."""
 
     @staticmethod
     def access(attacker_container, attacker, board_wan):

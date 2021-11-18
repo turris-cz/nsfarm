@@ -126,7 +126,9 @@ class Container:
         return cli.Shell(self.pexpect())
 
     def get_ip(
-        self, interfaces: typing.Optional[typing.Container] = None, versions: typing.Container = frozenset([4, 6])
+        self,
+        interfaces: typing.Optional[typing.Container] = None,
+        versions: typing.Container = frozenset([4, 6]),
     ) -> list:
         """returns list of ipaddress.IP#Interface filtered according to parameters.
 

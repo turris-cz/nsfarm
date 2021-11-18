@@ -11,29 +11,30 @@ from . import mark
 
 @pytest.mark.deploy
 def test_syslog_ng(client_board):
-    """Check that syslog-ng is running by checking if there is /var/log/messages (default log output).
-    """
+    """Check that syslog-ng is running by checking if there is /var/log/messages (default log output)."""
     client_board.run("[ -f /var/log/messages ]")
 
 
 @pytest.mark.deploy
-@pytest.mark.parametrize("process", [
-    "crond",
-    "dnsmasq",
-    pytest.param("kresd", marks=mark.kresd),
-    pytest.param("unbound", marks=mark.unbound),
-    "lighttpd",
-    "mosquitto",
-    "netifd",
-    "odhcpd",
-    "rpcd",
-    "sshd",
-    "syslog-ng",
-    "ubusd",
-])
+@pytest.mark.parametrize(
+    "process",
+    [
+        "crond",
+        "dnsmasq",
+        pytest.param("kresd", marks=mark.kresd),
+        pytest.param("unbound", marks=mark.unbound),
+        "lighttpd",
+        "mosquitto",
+        "netifd",
+        "odhcpd",
+        "rpcd",
+        "sshd",
+        "syslog-ng",
+        "ubusd",
+    ],
+)
 def test_processes(client_board, process):
-    """Check that various essential processes are running.
-    """
+    """Check that various essential processes are running."""
     client_board.run(f"pgrep -x '{process}' || pgrep -a \"$(which '{process}')\"")
 
 
@@ -57,56 +58,60 @@ basic_services = [
 
 
 @pytest.mark.deploy
-@pytest.mark.parametrize("service", basic_services + [
-    pytest.param("kresd", marks=mark.kresd),
-    pytest.param("unbound", marks=mark.unbound),
-])
+@pytest.mark.parametrize(
+    "service",
+    basic_services
+    + [
+        pytest.param("kresd", marks=mark.kresd),
+        pytest.param("unbound", marks=mark.unbound),
+    ],
+)
 def test_running_services(client_board, service):
-    """Check that various essential services are running.
-    """
+    """Check that various essential services are running."""
     assert service_is_running(service, client_board)
 
 
 @pytest.mark.deploy
-@pytest.mark.parametrize("service", basic_services + [
-    "boot",
-    "done",
-    "gpio_switch",
-    "led",
-    pytest.param("mox_autosetup", marks=mark.only_mox),
-    pytest.param("rainbow", marks=mark.rainbow),
-    "resolver",
-    pytest.param("setup_led", marks=mark.only_turris1x),
-    "srv",
-    "sysctl",
-    "sysfixtime",
-    "sysfsutils",
-    "system",
-    "ucitrack",
-    "umount",
-    pytest.param("update_mac", marks=mark.only_turris1x),
-    "updater-journal-recover",
-    "urandom_seed",
-    pytest.param("zram", marks=mark.low_ram),
-])
+@pytest.mark.parametrize(
+    "service",
+    basic_services
+    + [
+        "boot",
+        "done",
+        "gpio_switch",
+        "led",
+        pytest.param("mox_autosetup", marks=mark.only_mox),
+        pytest.param("rainbow", marks=mark.rainbow),
+        "resolver",
+        pytest.param("setup_led", marks=mark.only_turris1x),
+        "srv",
+        "sysctl",
+        "sysfixtime",
+        "sysfsutils",
+        "system",
+        "ucitrack",
+        "umount",
+        pytest.param("update_mac", marks=mark.only_turris1x),
+        "updater-journal-recover",
+        "urandom_seed",
+        pytest.param("zram", marks=mark.low_ram),
+    ],
+)
 def test_services(client_board, service):
-    """Check that various essential services are enabled.
-    """
+    """Check that various essential services are enabled."""
     client_board.run(f"/etc/init.d/{service} enabled")
 
 
 @pytest.mark.deploy
 def test_lighttpd(lan1_client):
-    """Test that there is access to router interface.
-    """
+    """Test that there is access to router interface."""
     pexp = Shell(lan1_client.pexpect())
     pexp.run("wget 192.168.1.1 && rm index.html")
 
 
 @pytest.mark.deploy
 def test_no_wan(client_board):
-    """Wan interface should be in default configured to none and thus disabled.
-    """
+    """Wan interface should be in default configured to none and thus disabled."""
     client_board.run("uci get network.wan.proto")
     assert client_board.output == "none"
 
@@ -118,8 +123,7 @@ class TestNoInternetAccess:
 
     @pytest.fixture(scope="class", autouse=True)
     def fixture_dhcp_isp(self, lxd_client, device_map, client_board):
-        """This provides DHCP server on WAN interface the router could use to autoconfigure WAN if it would want to.
-        """
+        """This provides DHCP server on WAN interface the router could use to autoconfigure WAN if it would want to."""
         with Container(lxd_client, "isp-dhcp", device_map) as container:
             container.shell.run("wait4network")
             client_board.run("/etc/init.d/network restart")  # Trigger network restart to force potential renew now

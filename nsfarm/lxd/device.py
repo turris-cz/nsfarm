@@ -5,8 +5,7 @@ import collections.abc
 
 
 class Device(abc.ABC):
-    """Generic device handler for LXD container.
-    """
+    """Generic device handler for LXD container."""
 
     def __init__(self, value):
         self.value = value
@@ -20,8 +19,7 @@ class Device(abc.ABC):
 
 
 class NetInterface(Device):
-    """Handler to manage single network interface using MacVLAN.
-    """
+    """Handler to manage single network interface using MacVLAN."""
 
     def acquire(self, device_map: dict):
         devid = f"net:{self.value}"
@@ -36,8 +34,7 @@ class NetInterface(Device):
 
 
 class CharDevice(Device):
-    """Handler to manage character device.
-    """
+    """Handler to manage character device."""
 
     def acquire(self, device_map: dict):
         return {

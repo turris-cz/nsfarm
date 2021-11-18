@@ -15,7 +15,12 @@ logger = logging.getLogger(__package__)
 class Element:
     """Wrapper class around Selenium's WebElement. It provides additional functionality."""
 
-    def __init__(self, webdriver: selenium.webdriver.remote.webdriver.WebDriver, xpath: str, timeout=10):
+    def __init__(
+        self,
+        webdriver: selenium.webdriver.remote.webdriver.WebDriver,
+        xpath: str,
+        timeout=10,
+    ):
         self.webdriver = webdriver
         self.xpath = xpath
         self._element = _Wait(self.webdriver, timeout).until(_ec.presence_of_element_located((_By.XPATH, xpath)))
@@ -61,7 +66,11 @@ class Page(abc.ABC):
     _ID: str = "//"
     _ELEMENTS: dict[str, str] = dict()
 
-    def __init__(self, webdriver: selenium.webdriver.remote.webdriver.WebDriver, url: str = "http://192.168.1.1/"):
+    def __init__(
+        self,
+        webdriver: selenium.webdriver.remote.webdriver.WebDriver,
+        url: str = "http://192.168.1.1/",
+    ):
         self.url = url
         self.webdriver = webdriver
 

@@ -21,15 +21,14 @@ import typing
 import pexpect
 from . import mterm
 
-CTRL_C = '\x03'
-CTRL_D = '\x04'
+CTRL_C = "\x03"
+CTRL_D = "\x04"
 
 _FLUSH_BUFFLEN = 2048
 
 
 def pexpect_flush(pexpect_handle):
-    """Flush all input on pexpect. This effectively reads everything.
-    """
+    """Flush all input on pexpect. This effectively reads everything."""
     # The read_nonblocking blocks when there is not at least one byte available for read (yeah you are reading it right
     # the nonblocking read is blocking). The solution here is to use timeout with zero value. This raises timeout
     # exception immediately once there is no input available.
@@ -50,8 +49,7 @@ def run_exit_code_zero(exit_code):
 
 
 class Cli(abc.ABC):
-    """This is generic abstraction on top of pexpect for command line interface.
-    """
+    """This is generic abstraction on top of pexpect for command line interface."""
 
     def __init__(self, pexpect_handle, flush=True):
         self._pe = pexpect_handle
@@ -89,9 +87,12 @@ class Cli(abc.ABC):
         self.expect_exact(cmd)
         self.expect_exact(["\r\n", "\n\r"])
 
-    def run(self, cmd: str = "",
-            exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero,
-            **kwargs) -> typing.Any:
+    def run(
+        self,
+        cmd: str = "",
+        exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero,
+        **kwargs,
+    ) -> typing.Any:
         """Run given command and follow output until prompt is reached and return exit code with optional automatic
         check. This is same as if you would call cmd() and prompt() while checking exit_code.
 
@@ -106,8 +107,7 @@ class Cli(abc.ABC):
         return ecode if exit_code is None else exit_code(ecode)
 
     def match(self, index: int) -> str:
-        """Returns located match in previously matched output.
-        """
+        """Returns located match in previously matched output."""
         return self._pe.match.group(index).decode()
 
     def flush(self):
@@ -136,6 +136,7 @@ class Shell(Cli):
 
     This is tested to handle busybox and bash.
     """
+
     _COLUMNS_NUM = 800
     _NOCMD = ":"
     _SET_NSF_PROMPT = r"export PS1='nsfprompt:$(echo -n $?)\$ '"
@@ -170,13 +171,11 @@ class Shell(Cli):
         return super().command(cmd)
 
     def ctrl_c(self):
-        """Sends ^C character.
-        """
+        """Sends ^C character."""
         self.send(CTRL_C)
 
     def ctrl_d(self):
-        """Sends ^D character.
-        """
+        """Sends ^D character."""
         self.send(CTRL_D)
 
     def txt_read(self, path):
@@ -236,8 +235,8 @@ class Shell(Cli):
 
 
 class Uboot(Cli):
-    """U-boot prompt support class.
-    """
+    """U-boot prompt support class."""
+
     _NOCMD = ";"
     _PROMPT = "(\r\n|\n\r|^)=> "
     _EXIT_CODE_ECHO = "echo $?"
@@ -269,7 +268,8 @@ class FDLogging:
     This has one primary limitation and that is output only in lines. Log is created only when new line character is
     located not before that.
     """
-    _EXPECTED_EOL = b'\n\r'
+
+    _EXPECTED_EOL = b"\n\r"
 
     def __init__(self, fileno, logger, in_level=logging.INFO, out_level=logging.DEBUG):
         self._logger = logger
@@ -288,8 +288,7 @@ class FDLogging:
 
     @property
     def socket(self):
-        """Returns socket for user to use to communicate trough this logged passtrough.
-        """
+        """Returns socket for user to use to communicate trough this logged passtrough."""
         return self._user_sock
 
     def set_propagation(self, propagate: bool):
@@ -299,8 +298,7 @@ class FDLogging:
         self._propagate = propagate
 
     def close(self):
-        """Close socket and stop logging.
-        """
+        """Close socket and stop logging."""
         if self._our_sock is None:
             return
         self._our_sock.close()
@@ -320,15 +318,15 @@ class FDLogging:
         if not lines:
             return data
         # The last line does not have to be terminated (no new line character) so just preserve it
-        reminder = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b''
+        reminder = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b""
         for line in lines:
             self._log_line(prefix, line, level)
         return reminder
 
     def _thread_func(self):
         data = {
-            self._fileno: b'',
-            self._our_sock.fileno(): b'',
+            self._fileno: b"",
+            self._our_sock.fileno(): b"",
         }
         level = {
             self._fileno: self._in_level,
@@ -338,10 +336,7 @@ class FDLogging:
             self._fileno: self._our_sock.fileno(),
             self._our_sock.fileno(): self._fileno,
         }
-        prefix = {
-            self._fileno: '< ',
-            self._our_sock.fileno(): '> '
-        }
+        prefix = {self._fileno: "< ", self._our_sock.fileno(): "> "}
 
         poll = select.poll()
         poll.register(self._fileno, select.POLLIN)
@@ -362,12 +357,13 @@ class PexpectLogging:
 
     This emulates file object and is intended to be used with pexpect handler as logger.
     """
-    _EXPECTED_EOL = b'\n\r'
+
+    _EXPECTED_EOL = b"\n\r"
 
     def __init__(self, logger):
         self._level = logging.INFO
         self.logger = logger
-        self.linebuf = b''
+        self.linebuf = b""
 
     def __del__(self):
         if self.linebuf:
@@ -377,16 +373,14 @@ class PexpectLogging:
         self.logger.log(self._level, repr(line.rstrip(self._EXPECTED_EOL).expandtabs())[2:-1])
 
     def write(self, buf):
-        """Standard-like file write function.
-        """
+        """Standard-like file write function."""
         jbuf = self.linebuf + buf
         lines = jbuf.splitlines(keepends=True)
         # If the last line is not terminated (no new line character) so just preserve it
-        self.linebuf = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b''
+        self.linebuf = lines.pop() if lines[-1] and lines[-1][-1] not in self._EXPECTED_EOL else b""
         for line in lines:
             self._log(line)
 
     def flush(self):
-        """Standard-like flush function.
-        """
+        """Standard-like flush function."""
         # Just ignore flush

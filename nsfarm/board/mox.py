@@ -4,8 +4,7 @@ from ._board import Board
 
 
 class Mox(Board):
-    """Turris Mox boards.
-    """
+    """Turris Mox boards."""
 
     @property
     def wan(self):

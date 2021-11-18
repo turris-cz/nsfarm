@@ -8,51 +8,53 @@ from ..mterm import mterm
 def parser(parser):
     subparsers = parser.add_subparsers()
 
-    plist = subparsers.add_parser('list', help='List avalable targets for NSFarm')
-    plist.set_defaults(target_op='list')
+    plist = subparsers.add_parser("list", help="List avalable targets for NSFarm")
+    plist.set_defaults(target_op="list")
     plist.add_argument(
-        '-a', '--all',
+        "-a",
+        "--all",
         action="store_true",
         default=False,
-        help="List all targets not just available ones"
+        help="List all targets not just available ones",
     )
     plist.add_argument(
-        '-b', '--board',
-        help="Limit to specific board type"
+        "-b",
+        "--board",
+        help="Limit to specific board type",
     )
     plist.add_argument(
-        '-s', '--serial',
-        action='store_true',
-        help="Limit to only targets with serial console"
+        "-s",
+        "--serial",
+        action="store_true",
+        help="Limit to only targets with serial console",
     )
 
-    verify = subparsers.add_parser('verify', help='Verify that target is correctly configured.')
-    verify.set_defaults(target_op='verify')
+    verify = subparsers.add_parser("verify", help="Verify that target is correctly configured.")
+    verify.set_defaults(target_op="verify")
     verify.add_argument(
-        'TARGET',
-        nargs='*',
-        help="Name of target to verify configuration of."
+        "TARGET",
+        nargs="*",
+        help="Name of target to verify configuration of.",
     )
 
-    uboot = subparsers.add_parser('uboot', help='Access uboot trough serial console on given target')
-    uboot.set_defaults(target_op='uboot')
+    uboot = subparsers.add_parser("uboot", help="Access uboot trough serial console on given target")
+    uboot.set_defaults(target_op="uboot")
     uboot.add_argument(
-        'TARGET',
+        "TARGET",
         nargs=1,
-        help="Name of target to access."
+        help="Name of target to access.",
     )
 
     return {
         None: parser,
-        'list': plist,
-        'verify': verify,
-        'uboot': uboot,
+        "list": plist,
+        "verify": verify,
+        "uboot": uboot,
     }
 
 
 def op_list(args, parser):
-    """Handler for command line operation list.
-    """
+    """Handler for command line operation list."""
     targets = Targets()
     for name, target in targets.items():
         if not args.all and not target.is_available():
@@ -66,8 +68,7 @@ def op_list(args, parser):
 
 
 def op_verify(args, parser):
-    """Handler for command line operation verify.
-    """
+    """Handler for command line operation verify."""
     targets = Targets()
     toverify = args.TARGET
     if len(toverify) == 0:
@@ -79,12 +80,12 @@ def op_verify(args, parser):
         correct = targets[target].check()
         print(f"{target}: {correct}")
         result = result and correct
+
     sys.exit(0 if result else 1)
 
 
 def op_uboot(args, parser):
-    """Handler for command line operation uboot.
-    """
+    """Handler for command line operation uboot."""
     targets = Targets()
     target_name = args.TARGET[0]
     if target_name not in targets:
@@ -97,11 +98,11 @@ def op_uboot(args, parser):
 
 def handle_args(args, parser_ret):
     handles = {
-        'list': op_list,
-        'verify': op_verify,
-        'uboot': op_uboot,
+        "list": op_list,
+        "verify": op_verify,
+        "uboot": op_uboot,
     }
-    if hasattr(args, 'target_op'):
+    if hasattr(args, "target_op"):
         handles[args.target_op](args, parser_ret[args.target_op])
     else:
         parser_ret[None].print_usage()
@@ -109,11 +110,11 @@ def handle_args(args, parser_ret):
 
 
 def main():
-    top_parser = argparse.ArgumentParser(description='Targets of NSFarm listing and management.')
+    top_parser = argparse.ArgumentParser(description="Targets of NSFarm listing and management.")
     parser_ret = parser(top_parser)
     handle_args(top_parser.parse_args(), parser_ret)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.argv[0] = "nsfarm.config"
     main()
