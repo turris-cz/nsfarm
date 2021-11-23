@@ -79,7 +79,9 @@ def clean_containers(dry_run=False):
             try:
                 os.kill(pid, 0)
             except OSError as err:
-                if (err.errno != 3):  # 3 == ESRCH: No such process
+                if err.errno == 1:  # 1 == EPERM: Process is running under different user
+                    continue
+                if err.errno != 3:  # 3 == ESRCH: No such process
                     raise
                 removed.append(cont.name)
                 if not dry_run:
