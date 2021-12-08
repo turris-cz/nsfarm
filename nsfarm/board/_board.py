@@ -95,23 +95,27 @@ class Board(abc.ABC):
         It has to implement TFTP uboot routines.
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def wan(self):
         """Network interface name for WAN interface in router"""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def lan1(self):
         """Network interface name for LAN1 interface in router
         Note that this not matches lan1 port on router but rather is primary lan port.
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def lan2(self):
         """Network interface name for LAN2 interface in router
         Note that this not matches lan2 port on router but rather is secondary test port (such as different switch).
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def lan3(self):
         """Network interface name for LAN3 interface in router
         Note that this not matches lan3 port on router but rather is tercial test port (such as different switch).
