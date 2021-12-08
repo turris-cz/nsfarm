@@ -22,6 +22,46 @@ class Common:
     def fixture_shell(self, container):
         return Shell(container.pexpect())
 
+    def test_dir(self, shell):
+        """Check that Dir setup correctly manages directories."""
+        path = "/tmp/foo/fee/faa"
+        shell.run(f"[ ! -d '{path}' ]")
+        with utils.Dir(shell, path) as _:
+            shell.run(f"[ -d '{path}' ]")
+        shell.run(f"[ ! -d '{path}' ]")
+
+    def test_dir_existed(self, shell):
+        """Check that Dir setup does nothing if directory already exists."""
+        path = "/tmp"
+        shell.run(f"[ -d '{path}' ]")
+        with utils.Dir(shell, path) as _:
+            shell.run(f"[ -d '{path}' ]")
+        shell.run(f"[ -d '{path}' ]")
+
+    def test_deployfile(self, shell):
+        """Check that DeployFile works if there is no previous file."""
+        path = "/tmp/deployfile/test-file"
+        content = "Some content"
+        shell.run(f"[ ! -f '{path}' ]")
+        with utils.DeployFile(shell, path, content, mkdir=True) as _:
+            shell.run(f"cat '{path}'")
+            assert shell.output.strip() == content
+        shell.run(f"[ ! -f '{path}' ]")
+
+    def test_deployfile_exist(self, shell):
+        """Check that DeployFile works if there is previous file. We do nested usage here to simulate that."""
+        path = "/tmp/deployfile/test-file"
+        content1 = "Some content"
+        content2 = "Different content"
+        shell.run(f"[ ! -f '{path}' ]")
+        with utils.DeployFile(shell, path, content1, mkdir=True) as _:
+            shell.run(f"cat '{path}'")
+            assert shell.output.strip() == content1
+            with utils.DeployFile(shell, path, content2, mkdir=True) as _:
+                shell.run(f"cat '{path}'")
+                assert shell.output.strip() == content2
+        shell.run(f"[ ! -f '{path}' ]")
+
     def test_password(self, shell):
         """Check RootPassword setup."""
         password = "ILikeWhenPlansPanOut"
