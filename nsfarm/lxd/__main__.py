@@ -8,8 +8,8 @@ import pylxd
 from . import Container, utils
 
 
-def parser(parser):
-    subparsers = parser.add_subparsers()
+def parser(upper_parser):
+    subparsers = upper_parser.add_subparsers()
 
     clean = subparsers.add_parser("clean", help="Remove old and unused containers")
     clean.set_defaults(lxd_op="clean")
@@ -89,7 +89,7 @@ def parser(parser):
     )
 
     return {
-        None: parser,
+        None: upper_parser,
         "clean": clean,
         "bootstrap": bootstrap,
         "inspect": inspect,
@@ -129,10 +129,10 @@ def op_clean(args, _):
     sys.exit(0)
 
 
-def op_bootstrap(args, parser):
+def op_bootstrap(args, upper_parser):
     """Handler for command line operation bootstrap"""
     if not args.IMG and not args.all:
-        parser.print_usage()
+        upper_parser.print_usage()
         sys.exit(1)
     success = True
     if args.all:
@@ -141,16 +141,16 @@ def op_bootstrap(args, parser):
     sys.exit(0 if success else 1)
 
 
-def op_inspect(args, parser):
+def op_inspect(args, upper_parser):
     """Handler for command line operation inspect"""
-    kwargs = dict()
+    kwargs = {}
     if args.internet:
         kwargs["internet"] = True
-    device_map = dict()
+    device_map = {}
     if args.device:
         for device_spec in args.device:
             if "=" not in device_spec:
-                parser.error(f"Invalid device specifier: {device_spec}")
+                upper_parser.error(f"Invalid device specifier: {device_spec}")
             device, resource = device_spec.split("=", maxsplit=1)
             device_map[device] = resource
 
@@ -158,13 +158,13 @@ def op_inspect(args, parser):
     with Container(lxd_client, args.IMAGE, device_map=device_map, strict=False, **kwargs) as cont:
         if args.proxy:
             for proxy in args.proxy:
-                el = proxy.split(":", maxsplit=2)
-                if len(el) == 1:
-                    args = {"port": el[0]}
-                elif len(el) == 2:
-                    args = {"address": el[0], "port": el[1]}
+                fields = proxy.split(":", maxsplit=2)
+                if len(fields) == 1:
+                    args = {"port": fields[0]}
+                elif len(fields) == 2:
+                    args = {"address": fields[0], "port": fields[1]}
                 else:
-                    args = {"proto": el[0], "address": el[1], "port": el[2]}
+                    args = {"proto": fields[0], "address": fields[1], "port": fields[2]}
                 localport = cont.network.proxy_open(**args)
                 print(f"Proxy '{proxy}' to: {localport}")
         sys.exit(subprocess.call(["lxc", "exec", cont.name, "/bin/sh"]))

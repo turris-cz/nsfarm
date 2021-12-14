@@ -64,7 +64,7 @@ class Page(abc.ABC):
 
     _HREF: str = ""
     _ID: str = "//"
-    _ELEMENTS: dict[str, str] = dict()
+    _ELEMENTS: dict[str, str] = {}
 
     def __init__(
         self,

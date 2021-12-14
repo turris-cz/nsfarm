@@ -6,30 +6,30 @@ from .lxd import __main__ as lxd
 from .target import __main__ as target
 
 
-def parser(parser):
-    parser.add_argument(
+def parser(upper_parser):
+    upper_parser.add_argument(
         "-v",
         "--verbose",
         default=0,
         action="count",
         help="Increase logging verbosity level.",
     )
-    parser.add_argument(
+    upper_parser.add_argument(
         "-q",
         "--quiet",
         default=0,
         action="count",
         help="Decrease logging verbosity level.",
     )
-    parser.add_argument(
+    upper_parser.add_argument(
         "--log-level",
         default=logging.INFO,
         type=lambda x: getattr(logging, x),
         help="Configure the logging level.",
     )
 
-    subparsers = parser.add_subparsers(help="Utility to be used")
-    ret = {None: parser}
+    subparsers = upper_parser.add_subparsers(help="Utility to be used")
+    ret = {None: upper_parser}
 
     lxd_parser = subparsers.add_parser("lxd", help="Images management")
     lxd_parser.set_defaults(op="lxd")

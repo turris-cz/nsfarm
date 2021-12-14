@@ -1,3 +1,5 @@
+"""Generalizations for all boards nsfarm tests software on.
+"""
 from ..target.target import Target as _Target
 from .mox import Mox
 from .omnia import Omnia

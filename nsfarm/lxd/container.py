@@ -37,7 +37,7 @@ class Container:
         self._device_map = device_map
         self._override_wants_internet = internet
         self._strict = strict
-        self._devices = dict()
+        self._devices = {}
         self._network = None
 
         self._image = image if isinstance(image, Image) else Image(self._lxd, image)
@@ -168,7 +168,7 @@ class Container:
         preparation have no effect.
         """
         if self._device_map is None:
-            return dict()
+            return {}
         return self._device_map
 
     @property

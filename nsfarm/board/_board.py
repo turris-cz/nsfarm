@@ -2,10 +2,8 @@
 """
 import abc
 import logging
-import sys
 import time
 
-import pylxd
 import serial
 import serial.tools.miniterm
 from pexpect import fdpexpect

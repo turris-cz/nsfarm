@@ -7,7 +7,6 @@ from datetime import datetime
 import dateutil.parser
 import pylxd
 
-from .container import Container
 from .image import Image
 
 logger = logging.getLogger(__package__)
@@ -27,7 +26,7 @@ def clean_images(delta: dateutil.relativedelta.relativedelta, dry_run: bool = Fa
     since = datetime.today() - delta
 
     removed = []
-    for img in lxd_client.images.all():
+    for img in lxd_client.images.all():  # pylint: disable=E1101
         # We remove our images and images without alias as those are pulled images
         if img.aliases and not any(alias["name"].startswith("nsfarm/") for alias in img.aliases):
             continue
@@ -65,7 +64,7 @@ def clean_containers(dry_run=False):
     since = datetime.today() - BOOTSTRAP_LIMIT
 
     removed = []
-    for cont in lxd_client.instances.all():
+    for cont in lxd_client.instances.all():  # pylint: disable=E1101
         if not cont.name.startswith("nsfarm-"):
             continue
         if cont.name.startswith("nsfarm-bootstrap-"):

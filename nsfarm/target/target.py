@@ -2,7 +2,6 @@
 """
 import collections.abc
 import configparser
-import functools
 import pathlib
 import typing
 

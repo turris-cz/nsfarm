@@ -64,7 +64,7 @@ class Image:
             "net": NetInterface,
             "char": CharDevice,
         }
-        self._devices = dict()
+        self._devices = {}
         for param in params:
             split_param = param.split(":", maxsplit=1)
             negate = split_param[0][0] == "!"
@@ -137,7 +137,7 @@ class Image:
         """Returns tuple with additional devices to be included in container.
         These are not-exclusive devices.
         """
-        devices = dict()
+        devices = {}
         if isinstance(self._parent, Image):
             devices.update(self._parent.devices())
         devices.update(self._devices)
@@ -229,10 +229,9 @@ class Image:
 
     @staticmethod
     def architecture():
+        """An appropriate host architecture for image."""
         arch = platform.machine()
         archmap = {
             "x86_64": "amd64",
         }
-        if arch in archmap:
-            arch = archmap[arch]
-        return arch
+        return archmap.get(arch, default=arch)

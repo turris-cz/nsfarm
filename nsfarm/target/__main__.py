@@ -2,12 +2,11 @@ import argparse
 import sys
 
 from ..board import get_board
-from ..mterm import mterm
 from . import Targets
 
 
-def parser(parser):
-    subparsers = parser.add_subparsers()
+def parser(upper_parser):
+    subparsers = upper_parser.add_subparsers()
 
     plist = subparsers.add_parser("list", help="List avalable targets for NSFarm")
     plist.set_defaults(target_op="list")
@@ -47,14 +46,14 @@ def parser(parser):
     )
 
     return {
-        None: parser,
+        None: upper_parser,
         "list": plist,
         "verify": verify,
         "uboot": uboot,
     }
 
 
-def op_list(args, parser):
+def op_list(args, upper_parser):
     """Handler for command line operation list."""
     targets = Targets()
     for name, target in targets.items():
@@ -68,7 +67,7 @@ def op_list(args, parser):
     sys.exit(0)
 
 
-def op_verify(args, parser):
+def op_verify(args, upper_parser):
     """Handler for command line operation verify."""
     targets = Targets()
     toverify = args.TARGET
@@ -77,7 +76,7 @@ def op_verify(args, parser):
     result = True
     for target in toverify:
         if target not in targets:
-            parser.error(f"Target does not exist: {target}")
+            upper_parser.error(f"Target does not exist: {target}")
         correct = targets[target].check()
         print(f"{target}: {correct}")
         result = result and correct
@@ -85,12 +84,12 @@ def op_verify(args, parser):
     sys.exit(0 if result else 1)
 
 
-def op_uboot(args, parser):
+def op_uboot(args, upper_parser):
     """Handler for command line operation uboot."""
     targets = Targets()
     target_name = args.TARGET[0]
     if target_name not in targets:
-        parser.error(f"Target does not exist: {target_name}")
+        upper_parser.error(f"Target does not exist: {target_name}")
     board = get_board(targets[target_name])
     uboot_cli = board.uboot()
     uboot_cli.mterm()

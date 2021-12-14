@@ -1,7 +1,6 @@
 """Devices management and assigment to containers.
 """
 import abc
-import collections.abc
 
 
 class Device(abc.ABC):
