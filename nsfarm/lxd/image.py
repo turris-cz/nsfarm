@@ -31,7 +31,7 @@ class Image:
     def __init__(self, lxd_client: pylxd.Client, img_name: str):
         self.name = img_name
         self._lxd = lxd_client
-        self._dir_path = self.IMGS_DIR / img_name
+        self._dir_path: typing.Optional[pathlib.Path] = self.IMGS_DIR / img_name
         self._file_path = self._dir_path.with_suffix(self._dir_path.suffix + ".sh")
 
         self.lxd_image = None
@@ -60,11 +60,11 @@ class Image:
             raise LXDImageParentError(self.name, parent)
 
         attributes = {
-            "internet": lambda value: True,
             "net": NetInterface,
             "char": CharDevice,
         }
         self._devices = {}
+        self._wants_internet = self._parent.wants_internet if isinstance(self._parent, Image) else False
         for param in params:
             split_param = param.split(":", maxsplit=1)
             negate = split_param[0][0] == "!"
@@ -75,13 +75,10 @@ class Image:
                     self._devices[param] = attributes[devtype](value)
                 else:
                     self._devices.pop(param, None)
+            elif devtype == "internet":
+                self._wants_internet = True
             else:
                 raise LXDImageParameterError(self.name, param)
-
-        self._wants_internet = self._devices.pop(
-            "internet",
-            self._parent.wants_internet if isinstance(self._parent, Image) else False,
-        )
 
     @functools.lru_cache(maxsize=1)
     def hash(self) -> str:

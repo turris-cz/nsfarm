@@ -37,8 +37,9 @@ class Container:
         self._device_map = device_map
         self._override_wants_internet = internet
         self._strict = strict
-        self._devices = {}
-        self._network = None
+        self._devices: dict[str, Device] = {}
+        self._network: typing.Optional[NetworkInterface] = None
+        self._shell = None
 
         self._image = image if isinstance(image, Image) else Image(self._lxd, image)
         self._logger = logging.getLogger(f"{__package__}[{self._image.name if name is None else name}]")
@@ -116,14 +117,15 @@ class Container:
         return pexp
 
     @property
-    @functools.lru_cache
     def shell(self):
         """Extension method that provies access to shell in container.
         It caches result so after first call it always returns same instance of Shell.
         This is intended mostly as easy to reach system console. The prefered way of performing tests trough container
         is using pexpect() method as that spawns multiple separate shell instances.
         """
-        return cli.Shell(self.pexpect())
+        if self._shell is None:
+            self._shell = cli.Shell(self.pexpect())
+        return self._shell
 
     def get_ip(
         self,
@@ -153,9 +155,11 @@ class Container:
         self.cleanup()
 
     @property
-    def name(self) -> typing.Union[str, None]:
+    def name(self) -> typing.Optional[str]:
         """Name of container if prepared, otherwise None."""
-        return self.lxd_container.name if self.lxd_container is not None else None
+        if self.lxd_container is None:
+            return None
+        return self.lxd_container.name
 
     @property
     def image(self) -> Image:
@@ -172,11 +176,11 @@ class Container:
         return self._device_map
 
     @property
-    def devices(self) -> typing.Tuple[Device]:
+    def devices(self) -> dict[str, Device]:
         """Dict of passed devices from host."""
         return self._devices
 
     @property
-    def network(self) -> dict:
+    def network(self) -> typing.Optional[NetworkInterface]:
         """network representation, that represents all data connections."""
         return self._network

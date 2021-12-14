@@ -6,6 +6,9 @@ from ._board import Board
 class Turris1x(Board):
     """Turris 1.0 and 1.1 boards."""
 
+    def _board_bootup(self, uboot):
+        raise NotImplementedError
+
     @property
     def wan(self):
         return "eth0"
@@ -17,3 +20,7 @@ class Turris1x(Board):
     @property
     def lan2(self):
         return "lan3"
+
+    @property
+    def lan3(self):
+        return "lan4"

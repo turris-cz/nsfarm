@@ -6,6 +6,9 @@ from ._board import Board
 class Mox(Board):
     """Turris Mox boards."""
 
+    def _board_bootup(self, uboot):
+        raise NotImplementedError
+
     @property
     def wan(self):
         return "eth0"
