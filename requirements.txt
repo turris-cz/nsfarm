@@ -2,5 +2,5 @@ pytest >= 5.0
 pexpect
 pyserial
 pylxd
-dateutil
+dateutils
 selenium

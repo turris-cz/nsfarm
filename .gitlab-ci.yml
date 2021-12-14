@@ -25,10 +25,18 @@ black:
   stage: style
   allow_failure: true
   script:
-    - black --diff --check --line-length 120 .
+    - black --diff --check .
 
 isort:
   stage: style
   allow_failure: true
   script:
-    - isort --profile black --diff --check .
+    - isort --diff --check .
+
+pylint:
+  stage: style
+  allow_failure: true
+  before_script:
+    - pip3 install -r requirements.txt
+  script:
+    - pylint $(find -type f -name "*.py")
