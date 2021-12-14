@@ -1,0 +1,34 @@
+image: $CI_REGISTRY_IMAGE
+
+stages:
+  - docker
+  - style
+
+docker:
+  stage: docker
+  image: $CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX/docker
+  services:
+    - $CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX/docker:dind
+  tags:
+    - dind
+    - privileged
+  variables:
+    TAG: "$CI_REGISTRY_IMAGE"
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker pull $TAG || true
+    - docker build --pull --cache-from $TAG --tag $TAG --file .DockerFile .
+    - docker push $TAG
+
+black:
+  stage: style
+  allow_failure: true
+  script:
+    - black --diff --check --line-length 120 .
+
+isort:
+  stage: style
+  allow_failure: true
+  script:
+    - isort --profile black --diff --check .
