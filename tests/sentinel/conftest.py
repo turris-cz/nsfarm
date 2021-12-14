@@ -1,6 +1,8 @@
 import pytest
-from nsfarm.lxd import Container
+
 from nsfarm.cli import Shell
+from nsfarm.lxd import Container
+
 from .test_dynfw import IPSET
 
 

@@ -12,9 +12,11 @@ import contextlib
 import ipaddress
 import re
 import warnings
+
 import pytest
-import nsfarm.lxd
+
 import nsfarm.cli
+import nsfarm.lxd
 
 
 def ip_within_range(ip, ip_min, ip_max):

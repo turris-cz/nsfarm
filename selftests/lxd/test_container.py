@@ -1,6 +1,9 @@
 import time
+
 import pytest
+
 from nsfarm.lxd import Container, Image
+
 from .test_image import BASE_IMG
 
 

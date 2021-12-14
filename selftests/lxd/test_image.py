@@ -1,4 +1,5 @@
 import pytest
+
 from nsfarm.lxd import Image, exceptions
 
 BASE_IMG = "base-alpine"

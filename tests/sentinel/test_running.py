@@ -1,8 +1,8 @@
 """These tests just check that Sentinel components are running after installation.
 """
 import pytest
-from nsfarm.toolbox import service_is_running
 
+from nsfarm.toolbox import service_is_running
 
 sentinel_services = [
     "sentinel-dynfw-client",

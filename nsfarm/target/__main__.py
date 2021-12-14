@@ -1,8 +1,9 @@
-import sys
 import argparse
-from . import Targets
+import sys
+
 from ..board import get_board
 from ..mterm import mterm
+from . import Targets
 
 
 def parser(parser):

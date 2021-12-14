@@ -1,8 +1,10 @@
 """Check if nsfarm-internet really has the Internet access.
 """
 import pytest
-from nsfarm.lxd import Container
+
 from nsfarm.cli import Shell
+from nsfarm.lxd import Container
+
 from .test_image import BASE_IMG
 
 

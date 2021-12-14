@@ -1,5 +1,5 @@
-import pytest
 import pylxd
+import pytest
 
 
 @pytest.fixture(name="lxd_client", scope="package")

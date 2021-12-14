@@ -1,6 +1,7 @@
 """Shell class tests.
 """
 import pytest
+
 from nsfarm.cli import Shell
 from nsfarm.lxd import Container
 

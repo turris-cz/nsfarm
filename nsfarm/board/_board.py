@@ -1,13 +1,15 @@
 """This defines generic board and its helpers.
 """
-import sys
 import abc
-import time
 import logging
+import sys
+import time
+
 import pylxd
 import serial
 import serial.tools.miniterm
 from pexpect import fdpexpect
+
 from .. import cli
 from ..lxd import Container
 from ..target.target import Target

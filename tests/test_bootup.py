@@ -2,10 +2,13 @@
 general errors such as disabled core services.
 """
 import time
+
 import pytest
-from nsfarm.lxd import Container
+
 from nsfarm.cli import Shell
+from nsfarm.lxd import Container
 from nsfarm.toolbox import service_is_running
+
 from . import mark
 
 

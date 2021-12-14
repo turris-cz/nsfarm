@@ -3,7 +3,9 @@
 This checks if we are able to support various ISP configurations.
 """
 import pytest
+
 import nsfarm.lxd
+
 from . import common
 
 # pylint: disable=no-self-use

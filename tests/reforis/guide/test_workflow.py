@@ -1,6 +1,7 @@
 """Test selection of various workflows and what they activate.
 """
 import pytest
+
 from nsfarm.web import reforis
 
 

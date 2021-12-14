@@ -1,6 +1,7 @@
-import sys
 import argparse
 import logging
+import sys
+
 from .lxd import __main__ as lxd
 from .target import __main__ as target
 

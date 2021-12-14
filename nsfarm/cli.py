@@ -3,22 +3,19 @@
 This ensures systematic logging and access to terminals. We implement two special terminal types at the moment. We have
 support for shell and u-boot.  They differ in a way how they handle prompt and methods they provide to user.
 """
-# Notest on some of the hacks in this file:
-#
-# There are new line character matches in regular expressions. Correct one is \r\n but some serial controlles for some
-# reason also use \n\r so we match both alternatives.
-#
-import os
-import io
 import abc
-import logging
 import base64
 import fcntl
+import io
+import logging
+import os
 import select
 import socket
 import threading
 import typing
+
 import pexpect
+
 from . import mterm
 
 CTRL_C = "\x03"

@@ -1,8 +1,8 @@
 import logging
-from .image import Image
-from .container import Container
-from . import exceptions
 
+from . import exceptions
+from .container import Container
+from .image import Image
 
 IMAGE_REPO = "https://images.linuxcontainers.org"
 

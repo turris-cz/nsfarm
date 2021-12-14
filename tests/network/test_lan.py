@@ -1,7 +1,9 @@
 """Test LAN access of Internet and software on LAN side.
 """
 import pytest
+
 import nsfarm
+
 from . import common
 
 # pylint: disable=no-self-use

@@ -1,10 +1,12 @@
 """Various utility functions to manage NSFarm containers and images.
 """
-import os
 import logging
+import os
 from datetime import datetime
+
 import dateutil.parser
 import pylxd
+
 from .container import Container
 from .image import Image
 

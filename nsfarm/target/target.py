@@ -1,10 +1,10 @@
 """NSFarm configuration classes.
 """
-import pathlib
+import collections.abc
 import configparser
 import functools
+import pathlib
 import typing
-import collections.abc
 
 TARGET_CONFS = (
     "/etc/nsfarm_targets.ini",

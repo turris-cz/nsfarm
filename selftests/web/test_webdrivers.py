@@ -1,7 +1,8 @@
 """Simple test to verify that our Selenium setup works as expected.
 """
 import pytest
-from nsfarm.web import Container, BROWSERS
+
+from nsfarm.web import BROWSERS, Container
 
 # pylint: disable=no-self-use
 

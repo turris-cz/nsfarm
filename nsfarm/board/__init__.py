@@ -1,7 +1,7 @@
+from ..target.target import Target as _Target
 from .mox import Mox
 from .omnia import Omnia
 from .turris1x import Turris1x
-from ..target.target import Target as _Target
 
 
 def get_board(target_config: _Target):

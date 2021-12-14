@@ -1,5 +1,6 @@
-import pytest
 import pylxd
+import pytest
+
 from nsfarm import lxd
 
 

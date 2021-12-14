@@ -1,7 +1,9 @@
 """Test finished configuration in guide.
 """
 import pytest
+
 from nsfarm.web import reforis
+
 from .test_net import STEP
 
 

@@ -1,6 +1,7 @@
 """Test WAN or LAN configuration in guide.
 """
 import pytest
+
 from nsfarm.web import reforis
 
 NET = {"router": reforis.network.Wan, "bridge": reforis.network.Lan}

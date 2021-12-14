@@ -1,6 +1,7 @@
 """Test the first common step in guide.
 """
 import pytest
+
 from nsfarm.web import reforis
 
 

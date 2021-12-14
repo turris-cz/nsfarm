@@ -1,21 +1,23 @@
 """Images management.
 """
+import functools
+import hashlib
 import io
-import time
-import typing
 import logging
 import pathlib
-import hashlib
-import functools
 import platform
+import time
+import typing
+
 import pylxd
-from .exceptions import (
-    LXDImageUndefinedError,
-    LXDImageParentError,
-    LXDImageParameterError,
-)
-from .device import Device, NetInterface, CharDevice
+
 from .. import lxd
+from .device import CharDevice, Device, NetInterface
+from .exceptions import (
+    LXDImageParameterError,
+    LXDImageParentError,
+    LXDImageUndefinedError,
+)
 
 logger = logging.getLogger(__package__)
 

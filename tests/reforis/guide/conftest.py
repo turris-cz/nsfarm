@@ -1,5 +1,6 @@
-import nsfarm.web
 import pytest
+
+import nsfarm.web
 
 
 @pytest.fixture(name="webdriver", scope="package", params=nsfarm.web.BROWSERS)

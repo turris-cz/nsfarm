@@ -5,12 +5,14 @@ established but troughput because of timing or stability is minimal. Another pro
 load.
 We do not expect full speed of line. We expect at least 60% of speed here as rule of hand.
 """
-import pytest
 import abc
-import warnings
-import nsfarm
-import json
 import datetime
+import json
+import warnings
+
+import pytest
+
+import nsfarm
 
 # TODO Add some exclusive locking for these tests between NSFarm instances to ensure that we won't fail these because we
 # are running too much instances in paralel of this.

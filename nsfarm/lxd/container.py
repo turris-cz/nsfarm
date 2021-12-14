@@ -6,9 +6,9 @@ import logging
 import os
 import typing
 import warnings
-import pylxd
 
 import pexpect
+import pylxd
 
 from .. import cli, lxd
 from .device import Device

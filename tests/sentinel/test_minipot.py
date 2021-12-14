@@ -1,7 +1,9 @@
 """Tests for sentinel-minipot.
 """
 import abc
+
 import pytest
+
 from nsfarm.cli import CTRL_D
 
 # pylint: disable=unused-argument

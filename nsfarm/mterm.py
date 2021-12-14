@@ -1,14 +1,13 @@
 """Micro terminal to interface on top of generic socket and stdout/stderr.
 """
-import os
-import io
-import sys
 import fcntl
-import select
-import termios
+import io
 import logging
+import os
+import select
+import sys
+import termios
 import warnings
-
 
 EXIT_CHAR = b"\x1d"
 

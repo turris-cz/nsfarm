@@ -1,6 +1,7 @@
 """Test just pass trough interfaces configuration.
 """
 import pytest
+
 from nsfarm.web import reforis
 
 from .test_net import NET

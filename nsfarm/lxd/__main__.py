@@ -1,10 +1,11 @@
-import sys
 import argparse
-import pylxd
 import subprocess
+import sys
+
 import dateutil.relativedelta
-from . import utils
-from . import Container
+import pylxd
+
+from . import Container, utils
 
 
 def parser(parser):

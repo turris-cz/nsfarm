@@ -1,6 +1,7 @@
 """This contains implementations of common actions that are commonly performed on router in tests.
 """
 import json
+
 from .cli import Shell
 
 

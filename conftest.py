@@ -1,9 +1,11 @@
+import logging
 import os
 import re
-import logging
-import pytest
+
 import pkg_resources
+import pytest
 import selenium
+
 import nsfarm.target
 import nsfarm.web
 

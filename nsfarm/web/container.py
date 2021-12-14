@@ -3,8 +3,8 @@
 import contextlib
 import subprocess
 import typing
-import pylxd
 
+import pylxd
 import selenium.webdriver
 
 from ..lxd import Container as LXDContainer

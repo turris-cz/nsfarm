@@ -1,13 +1,16 @@
-import time
 import random
 import string
-import pytest
+import time
+
 import pylxd
+import pytest
+
 import nsfarm.board
 import nsfarm.cli
 import nsfarm.lxd
-import nsfarm.web
 import nsfarm.target
+import nsfarm.web
+
 from . import mark
 
 

@@ -1,5 +1,5 @@
-import ipaddress
 import contextlib
+import ipaddress
 import socket
 
 
