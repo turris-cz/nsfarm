@@ -14,6 +14,7 @@ RUN \
   pip3 install \
     black \
 	isort \
-	pylint
+	pylint \
+	mypy
 
 CMD [ "bash" ]

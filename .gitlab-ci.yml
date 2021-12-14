@@ -40,3 +40,11 @@ pylint:
     - pip3 install -r requirements.txt
   script:
     - pylint $(find -type f -name "*.py")
+
+mypy:
+  stage: style
+  allow_failure: true
+  before_script:
+    - pip3 install -r requirements.txt
+  script:
+    - mypy --ignore-missing-imports --install-types --non-interactive nsfarm
