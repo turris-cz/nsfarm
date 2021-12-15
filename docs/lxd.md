@@ -54,9 +54,9 @@ Example configuration:
 ```
 $ lxc profile show nsfarm-internet
 config: {}
-description: Default LXD profile
+description: NSFarm the Internet access
 devices:
-  eth0:
+  internet:
     name: internet
     nictype: bridged
     parent: lxdbr
