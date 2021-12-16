@@ -1,6 +1,10 @@
 import argparse
+import contextlib
 import sys
 
+import pylxd
+
+from .. import lxd, setup
 from ..board import get_board
 from . import Targets
 
@@ -45,11 +49,42 @@ def parser(upper_parser):
         help="Name of target to access.",
     )
 
+    boot = subparsers.add_parser("boot", help="Boot system trough serial console on given target")
+    boot.set_defaults(target_op="boot")
+    boot.add_argument(
+        "TARGET",
+        nargs=1,
+        help="Name of target to access.",
+    )
+    boot.add_argument(
+        "-B",
+        "--branch",
+        default="hbk",
+        help="Run system from specified Turris OS BRANCH instead of default hbk.",
+        metavar="BRANCH",
+    )
+    boot.add_argument(
+        "--no-client",
+        action="store_true",
+        help="Do not start client container alongside the boot to allow simple access on board.",
+    )
+    boot.add_argument(
+        "--no-isp",
+        action="store_true",
+        help="Do not provide ISP container with DHCP server on WAN.",
+    )
+    boot.add_argument(
+        "--default",
+        action="store_true",
+        help="In default we try to improve experience by applying some configuration. This disables that.",
+    )
+
     return {
         None: upper_parser,
         "list": plist,
         "verify": verify,
         "uboot": uboot,
+        "boot": boot,
     }
 
 
@@ -96,11 +131,52 @@ def op_uboot(args, upper_parser):
     sys.exit(0)
 
 
+@contextlib.contextmanager
+def boot_isp(args, lxd_client, target):
+    if args.no_isp:
+        return
+    with lxd.Container(lxd_client, "isp-dhcp", target.device_map()) as isp:
+        yield isp
+
+
+@contextlib.contextmanager
+def boot_client(args, lxd_client, target):
+    if args.no_client:
+        return
+    with lxd.Container(lxd_client, "client", {"net:lan": target.device_map()["net:lan1"]}) as client:
+        yield client
+
+
+def op_boot(args, parser):
+    """Handler for command line operation boot."""
+    targets = Targets()
+    target_name = args.TARGET[0]
+    if target_name not in targets:
+        parser.error(f"Target does not exist: {target_name}")
+    target = targets[target_name]
+    board = get_board(target)
+    lxd_client = pylxd.Client()
+    shell = board.bootup(lxd_client, args.branch)
+    shell.run("cd")
+    with boot_isp(args, lxd_client, target) as isp:
+        with boot_client(args, lxd_client, target) as client:
+            if not args.default:  # Perform various setups to have system in more usable state
+                setup.utils.RootPassword(shell, "turris").revert_not_needed()
+                if isp is not None:
+                    isp.shell.run("wait4network")
+                    setup.uplink.DHCPv4(shell).revert_not_needed()
+                if client is not None:
+                    setup.utils.SSHKey(client.shell, shell).revert_not_needed()
+            shell.mterm()
+    sys.exit(0)
+
+
 def handle_args(args, parser_ret):
     handles = {
         "list": op_list,
         "verify": op_verify,
         "uboot": op_uboot,
+        "boot": op_boot,
     }
     if hasattr(args, "target_op"):
         handles[args.target_op](args, parser_ret[args.target_op])
