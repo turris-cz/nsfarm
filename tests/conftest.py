@@ -1,4 +1,5 @@
 import collections.abc
+import ipaddress
 import random
 import string
 import time
@@ -235,22 +236,9 @@ def fixture_board_wan(client_board, isp_container):
     This configures static IP through ips_container.
     Returns wan IPv4 address of WAN interface.
     """
-    wan_ip = "172.16.1.142"
-    client_board.run("uci set network.wan.proto='static'")
-    client_board.run(f"uci set network.wan.ipaddr='{wan_ip}'")
-    client_board.run("uci set network.wan.netmask='255.240.0.0'")
-    client_board.run("uci set network.wan.gateway='172.16.1.1'")
-    client_board.run("uci set network.wan.dns='172.16.1.1'")
-    client_board.run("uci commit network")
-    client_board.run("/etc/init.d/network restart")
-    client_board.run("while ! ping -c1 -w1 172.16.1.1 >/dev/null; do true; done")
-    yield wan_ip
-    client_board.run("uci set network.wan.proto='none'")
-    client_board.run("uci delete network.wan.ipaddr")
-    client_board.run("uci delete network.wan.netmask")
-    client_board.run("uci delete network.wan.gateway")
-    client_board.run("uci delete network.wan.dns")
-    client_board.run("uci commit network")
+    with nsfarm.setup.uplink.StaticIPv4(client_board) as wan:
+        wan.wait4ping()
+        yield wan.network.ip
 
 
 @pytest.fixture(name="updater_branch", scope="package")

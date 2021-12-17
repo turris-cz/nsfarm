@@ -12,7 +12,8 @@ from nsfarm.cli import CTRL_D
 class GenericMinipot(abc.ABC):
     """Generic test definition for minipot."""
 
-    @abc.abstractstaticmethod
+    @staticmethod
+    @abc.abstractmethod
     def access(attacker_container, attacker, board_wan):
         """Try if we can access service."""
 
@@ -32,7 +33,7 @@ class TestTelnet(GenericMinipot):
 
     @staticmethod
     def access(attacker_container, attacker, board_wan):
-        telnet = attacker_container.pexpect(("telnet", board_wan))
+        telnet = attacker_container.pexpect(("telnet", str(board_wan)))
         telnet.expect_exact("Username: ")
         telnet.send(CTRL_D)
 
@@ -62,6 +63,6 @@ class TestSMTP(GenericMinipot):
 
     @staticmethod
     def access(attacker_container, attacker, board_wan):
-        telnet = attacker_container.pexpect(("telnet", board_wan, "587"))
+        telnet = attacker_container.pexpect(("telnet", str(board_wan), "587"))
         telnet.expect(r"220 .* ESMTP Postfix \(Debian\/GNU\)")
         telnet.send(CTRL_D)
