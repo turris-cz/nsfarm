@@ -80,7 +80,12 @@ class Board(abc.ABC):
             ccli.run(f"prepare_turris_image '{self.config.board}' '{os_branch}'", timeout=120)
             uboot.run("setenv ipaddr 192.168.1.142")
             uboot.run("setenv serverip 192.168.1.1")
-            self._board_bootup(uboot)
+            uboot.run(f'setenv bootargs "{" ".join(self.bootargs)}"')
+            if not self.config.legacyboot:
+                uboot.run("tftpboot ${kernel_addr_r} 192.168.1.1:image", timeout=240)
+                uboot.sendline("bootm ${kernel_addr_r}")
+            else:
+                self._legacy_boot(uboot, ccli)
         # Wait for bootup
         self._pexpect.expect_exact("Router Turris successfully started.", timeout=240)
         self._pexpect.sendline("")
@@ -88,12 +93,18 @@ class Board(abc.ABC):
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
         return shell
 
-    @abc.abstractmethod
-    def _board_bootup(self, uboot):
-        """Board specific bootup routine.
-
-        It has to implement TFTP uboot routines.
+    def _legacy_boot(self, uboot: cli.Uboot, container_cli: cli.Shell):
+        """The boot process uses FIT images but not every version of U-Boot supports them. This should perform boot for
+        such boards.
+        This is not intentionally marked as abstract method as not every board has version that requires it. At the same
+        time if legacy boot is enabled for such board then it fails with NotImplementedError.
         """
+        raise NotImplementedError
+
+    @property
+    def bootargs(self) -> list[str]:
+        """Provides list of boot arguments that should be passed to kernel for correct bootup."""
+        return ["earlyprintk", "rootfstype=ramfs"]
 
     @property
     @abc.abstractmethod

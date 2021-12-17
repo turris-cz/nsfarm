@@ -77,6 +77,11 @@ class Target:
         return self._conf.getboolean("reset_inverted", fallback=False)
 
     @property
+    def legacyboot(self) -> str:
+        """If does not support FIT image boot."""
+        return self._conf.get("legacyboot", fallback=False)
+
+    @property
     def wan(self) -> str:
         """Interface connected to WAN port of target board."""
         return self._conf.get("wan")

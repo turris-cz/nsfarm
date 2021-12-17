@@ -5,21 +5,6 @@ TFTP_ROOT="/var/tftpboot"
 board="$1"
 branch="${2:-hbk}"
 
-case "$board" in
-	omnia)
-		kernel="zImage"
-		dtb="dtb"
-		;;
-	mox)
-		kernel="Image"
-		dtb="armada-3720-turris-mox.dtb"
-		;;
-	*)
-		echo "Unsupported board: $board" >&2
-		exit 1
-		;;
-esac
-
 # Get appropriate medkit
 wait4network
 url="https://repo.turris.cz/$branch/medkit/$board-medkit-latest.tar.gz"
@@ -31,12 +16,13 @@ mkdir root
 tar -xzf medkit.tar.gz -C root
 ln -sf /sbin/init root/init
 ( cd root && find . | cpio -H newc -o > ../root.cpio )
-mkimage -A arm -O linux -T ramdisk -C none -d root.cpio root.uimage
+
+# Prepare U-Boot FIT image
+sed "s#@CWD@#$(pwd)#g;s#@DESCRIPTION@#$branch:$(date)#g" "/$board.its" > image.its
+mkimage -f image.its image
 
 # Prepare to TFTP
-cp "root/boot/$kernel" "$TFTP_ROOT/"
-cp -L "root/boot/$dtb" "$TFTP_ROOT/"
-mv root.uimage "$TFTP_ROOT/"
+mv image "$TFTP_ROOT/image"
 
-# Clean after ourself
-rm -rf root root.cpio medkit.tar.gz
+# Clean after ourself (we keep root directory and root.cpio for legacy boot)
+rm -rf image.its medkit.tar.gz

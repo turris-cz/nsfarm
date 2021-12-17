@@ -1,0 +1,46 @@
+/dts-v1/;
+
+/ {
+	description = "@DESCRIPTION@";
+
+	images {
+		kernel {
+			description = "Linux kernel";
+			data = /incbin/("@CWD@/root/boot/Image");
+			type = "kernel_noload";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load =  <0x5000000>;
+			entry = <0x5000000>;
+			hash-1 { algo = "sha1"; };
+		};
+		fdt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("@CWD@/root/boot/armada-3720-turris-mox.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash-1 { algo = "sha1"; };
+		};
+		ramdisk {
+			description = "Initial Ramdisk";
+			data = /incbin/("@CWD@/root.cpio");
+			type = "ramdisk";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+			hash-1 { algo = "sha1"; };
+		};
+	};
+
+	configurations {
+		default = "common";
+		common {
+			description = "Turris MOX";
+			kernel = "kernel";
+			fdt = "fdt";
+			ramdisk = "ramdisk";
+		};
+	};
+};

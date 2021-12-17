@@ -18,7 +18,7 @@ iface wan inet static
 EOF
 
 # Install utilities we need to repack image
-apk add uboot-tools
+apk add uboot-tools dtc
 
 # Install and enable TFTP server
 apk add tftp-hpa
