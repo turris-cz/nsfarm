@@ -34,5 +34,5 @@ rc-update add dbus
 rc-update add chromedriver
 
 # WebKit
-apk add webkit2gtk adwaita-gtk2-theme adwaita-icon-theme
+apk add webkit2gtk adwaita-icon-theme
 rc-update add webkitdriver

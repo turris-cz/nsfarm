@@ -134,10 +134,11 @@ def op_bootstrap(args, upper_parser):
     if not args.IMG and not args.all:
         upper_parser.print_usage()
         sys.exit(1)
+    lxd_client = pylxd.Client()
     success = True
     if args.all:
-        success &= utils.bootstrap()
-    success &= utils.bootstrap(args.IMG)
+        success &= utils.bootstrap(lxd_client)
+    success &= utils.bootstrap(lxd_client, args.IMG)
     sys.exit(0 if success else 1)
 
 
