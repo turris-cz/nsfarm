@@ -17,4 +17,9 @@ RUN \
 	pylint \
 	mypy
 
+COPY ./requirements.txt ./
+RUN \
+  pip3 install -r requirements.txt && \
+  rm -f requirements.txt
+
 CMD [ "bash" ]

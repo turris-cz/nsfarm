@@ -18,7 +18,7 @@ docker:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - docker pull $TAG || true
-    - docker build --pull --cache-from $TAG --tag $TAG --file .DockerFile .
+    - docker build --pull --cache-from $TAG --tag $TAG --file .Dockerfile .
     - docker push $TAG
 
 black:
@@ -36,15 +36,11 @@ isort:
 pylint:
   stage: style
   allow_failure: true
-  before_script:
-    - pip3 install -r requirements.txt
   script:
     - pylint $(find -type f -name "*.py")
 
 mypy:
   stage: style
   allow_failure: true
-  before_script:
-    - pip3 install -r requirements.txt
   script:
     - mypy --ignore-missing-imports --install-types --non-interactive nsfarm
