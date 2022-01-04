@@ -7,7 +7,7 @@ import pytest
 
 from nsfarm.cli import Shell
 from nsfarm.lxd import Container
-from nsfarm.toolbox import service_is_running
+from nsfarm.toolbox.openwrt import service_is_running
 
 from . import mark
 

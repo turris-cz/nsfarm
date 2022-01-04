@@ -2,7 +2,7 @@
 """
 import pytest
 
-from nsfarm.toolbox import service_is_running
+from nsfarm.toolbox.openwrt import service_is_running
 
 sentinel_services = [
     "sentinel-dynfw-client",

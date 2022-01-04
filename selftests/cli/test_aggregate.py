@@ -3,8 +3,10 @@
 import sys
 
 import pytest
+from lorem_text import lorem
 
 from nsfarm.cli import LineBytesAggregate
+from nsfarm.toolbox.tests import deterministic_random
 
 
 @pytest.fixture(name="aggregate")
@@ -14,65 +16,56 @@ def fixture_aggregate():
     return aggregate, collected
 
 
-lorem_ipsum = (
-    b"Lorem ipsum dolor sit amet,",
-    b"consectetur adipiscing elit,",
-    b"sed do eiusmod tempor incididunt ut labore et",
-    b"dolore magna aliqua. Ut enim ad minim veniam,",
-    b"quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea",
-    b"commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla "
-    + b"pariatur. Excepteur sint occaecat cupidatat non proident,",
-    b"sunt in culpa qui officia deserunt mollit anim id est laborum.",
-)
-
-
 @pytest.mark.parametrize("delimiter", [b"\n", b"\r", b"\n\r", b"\r\n", b"\r\r\n", b"\r\n\r\r"])
 class TestSplits:
     """Test our ability to split stream to lines based on different delimiters."""
 
+    with deterministic_random() as _:
+        lorem = [lorem.sentence().encode() for i in range(7)]
+
     def test_one_call(self, aggregate, delimiter):
         """Test that we correctly parse it if we call it with all data at once."""
         agg, collected = aggregate
-        agg.add(delimiter.join(lorem_ipsum))
-        assert tuple(collected) == lorem_ipsum[:-1]
+        agg.add(delimiter.join(self.lorem))
+        assert collected == self.lorem[:-1]
         agg.flush()
-        assert tuple(collected) == lorem_ipsum
+        assert collected == self.lorem
 
     def test_by_block(self, aggregate, delimiter):
         """Test that we correctly parse it if we call it multiple times with same sized blockes."""
         agg, collected = aggregate
-        data = delimiter.join(lorem_ipsum)
+        data = delimiter.join(self.lorem)
         block = 24
         for i in range(len(data) // block + 1):
             agg.add(data[block * i : min(block * (i + 1), len(data))])
-        assert tuple(collected) == lorem_ipsum[:-1]
+        assert collected == self.lorem[:-1]
         agg.flush()
-        assert tuple(collected) == lorem_ipsum
+        assert collected == self.lorem
 
     def test_by_line(self, aggregate, delimiter):
         """Test that we correctly parse it if we call it multiple times with same sized blockes."""
         agg, collected = aggregate
-        for line in lorem_ipsum:
+        for line in self.lorem:
             agg.add(line + delimiter)
-        assert tuple(collected) == lorem_ipsum
+        assert collected == self.lorem
 
     def test_by_line_delay(self, aggregate, delimiter):
         """Test that we correctly parse it if we call it multiple times with same sized blockes."""
         agg, collected = aggregate
-        for line in lorem_ipsum:
-            agg.add((b"" if line is lorem_ipsum[0] else delimiter) + line)
-        assert tuple(collected) == lorem_ipsum[:-1]
+        for line in self.lorem:
+            agg.add((b"" if line is self.lorem[0] else delimiter) + line)
+        assert collected == self.lorem[:-1]
         agg.flush()
-        assert tuple(collected) == lorem_ipsum
+        assert collected == self.lorem
 
     def test_by_char(self, aggregate, delimiter):
         """Test that we correctly parse it if we call it multiple times with same sized blockes."""
         agg, collected = aggregate
-        for byte in delimiter.join(lorem_ipsum):
+        for byte in delimiter.join(self.lorem):
             agg.add(byte.to_bytes(1, byteorder=sys.byteorder))
-        assert tuple(collected) == lorem_ipsum[:-1]
+        assert collected == self.lorem[:-1]
         agg.flush()
-        assert tuple(collected) == lorem_ipsum
+        assert collected == self.lorem
 
 
 def test_real(aggregate):

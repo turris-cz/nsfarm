@@ -1,8 +1,8 @@
-"""This contains implementations of common actions that are commonly performed on router in tests.
+"""This contains implementations of common actions that are commonly performed in tests on OpenWrt.
 """
 import json
 
-from .cli import Shell
+from ..cli import Shell
 
 
 def service_is_running(service: str, shell: Shell):

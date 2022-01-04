@@ -1,9 +1,11 @@
 """Shell class tests.
 """
 import pytest
+from lorem_text import lorem
 
 from nsfarm.cli import Shell
 from nsfarm.lxd import Container
+from nsfarm.toolbox.tests import deterministic_random
 
 
 class Common:
@@ -37,24 +39,15 @@ class Common:
 
     def test_txt(self, request, shell, test_file):
         """Check for simple use of txt_write and txt_read."""
-        txt = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et \
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex \
-            ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu \
-            fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt \
-            mollit anim id est laborum."
+        with deterministic_random() as _:
+            txt = lorem.paragraph()
         shell.txt_write(test_file, txt)
         assert txt == shell.txt_read(test_file)
 
     def test_txt_multiline(self, request, shell, test_file):
         """Check for multiline use of txt_write and txt_read."""
-        txt = """Lorem ipsum dolor sit amet,
-consectetur adipiscing elit,
-sed do eiusmod tempor incididunt ut labore et
-dolore magna aliqua. Ut enim ad minim veniam,
-quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla \
-pariatur. Excepteur sint occaecat cupidatat non proident,
-sunt in culpa qui officia deserunt mollit anim id est laborum."""
+        with deterministic_random() as _:
+            txt = lorem.paragraphs(5)  # 5 paragraphs means five lines
         shell.txt_write(test_file, txt)
         assert txt == shell.txt_read(test_file)
 
