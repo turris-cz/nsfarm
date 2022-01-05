@@ -231,4 +231,4 @@ class Image:
         archmap = {
             "x86_64": "amd64",
         }
-        return archmap.get(arch, default=arch)
+        return archmap.get(arch, arch)
