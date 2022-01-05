@@ -42,7 +42,8 @@ basic_services = [
     "foris-controller",
     "foris-ws",
     "fosquitto",
-    "haveged",
+    # We need haveged on Omnia and 1.x as we do not have hardware random generator only entropy feeder
+    pytest.param("haveged", marks=pytest.mark.board("omnia", "turris1x")),
     "lighttpd",
     "network",
     "odhcpd",
