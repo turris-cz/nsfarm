@@ -4,7 +4,7 @@ import nsfarm.web
 
 
 @pytest.fixture(name="webdriver", scope="package", params=nsfarm.web.BROWSERS)
-def fixture_webdriver(client_board, lan1_webclient, request):
+def fixture_webdriver(board_access, lan1_webclient, request):
     """Provides access to Selenium's web driver."""
     with lan1_webclient.webdriver(request.param) as driver:
         yield driver
@@ -20,8 +20,8 @@ def fixture_fail_screenshot(request, webdriver, screenshot):
 
 
 @pytest.fixture(autouse=True)
-def fixture_reset_guide(client_board):
+def fixture_reset_guide(board_access_for_fixture):
     """Reverts guide setting to the original values (thus to no guide)"""
     yield
     # Note: wizard might not exist so we mask intentionally here error when it is missing
-    client_board.run("uci del foris.wizard; uci commit foris")
+    board_access_for_fixture.run("uci del foris.wizard; uci commit foris")

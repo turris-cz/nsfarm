@@ -57,7 +57,7 @@ class DHCPv4Common(abc.ABC):
     @pytest.fixture(name="dhcp_clients", scope="class")
     def fixture_dhcp_clients(self, lxd_client, device_map):
         """Fixture starts specific number of clients on lan1 and returns them in list"""
-        cont = "client-dhcp"
+        cont = "client"
         dev_map = {"net:lan": device_map["net:lan1"]}
         with contextlib.ExitStack() as stack:
             yield [

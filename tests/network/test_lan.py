@@ -12,7 +12,7 @@ from . import common
 @pytest.fixture(name="dhcp_client", scope="module")
 def fixture_dchp_client(lxd_client, device_map):
     """Simple client with address obtained via DHCP"""
-    with nsfarm.lxd.Container(lxd_client, "client-dhcp", {"net:lan": device_map["net:lan1"]}) as container:
+    with nsfarm.lxd.Container(lxd_client, "client", {"net:lan": device_map["net:lan1"]}) as container:
         container.shell.run("wait4network")
         yield container
 

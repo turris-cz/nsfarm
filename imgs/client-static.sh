@@ -1,7 +1,9 @@
 #!/bin/bash
 # nsfarm:client net:lan
 ##################################################################################
-# DHCP image for clients on LAN
+# Image with static IP assigned to it.
+# Note that there should be always only one instance of such image on one
+# network as otherwise they will collide.
 ##################################################################################
 set -e
 
@@ -14,10 +16,13 @@ apk add openssh-client
 apk add iperf3
 apk add netcat-openbsd
 
-# First remove config of static ip
+# First remove config for DHCP
 sed -i '/auto lan.*/,$d' /etc/network/interfaces
 # Configure LAN1 interface for static local network
 cat >> /etc/network/interfaces <<EOF
 auto lan
-iface lan inet dhcp
+iface lan inet static
+        address 192.168.1.10
+        netmask 255.255.255.0
+        gateway 192.168.1.1
 EOF

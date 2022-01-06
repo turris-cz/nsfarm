@@ -213,7 +213,7 @@ def fixture_isp_container(lxd_client, device_map):
 @pytest.fixture(name="lan1_client", scope="package")
 def fixture_lan1_client(lxd_client, device_map):
     """Starts client container with static IP address 192.168.1.10/24 on LAN1 and provides it."""
-    with nsfarm.lxd.Container(lxd_client, "client", {"net:lan": device_map["net:lan1"]}) as container:
+    with nsfarm.lxd.Container(lxd_client, "client-static", {"net:lan": device_map["net:lan1"]}) as container:
         container.shell.run("wait4boot")
         yield container
 

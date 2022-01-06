@@ -17,8 +17,5 @@ apk add iperf3
 # Configure LAN1 interface for static local network
 cat >> /etc/network/interfaces <<EOF
 auto lan
-iface lan inet static
-        address 192.168.1.10
-        netmask 255.255.255.0
-        gateway 192.168.1.1
+iface lan inet dhcp
 EOF
