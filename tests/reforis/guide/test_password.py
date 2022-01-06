@@ -53,7 +53,6 @@ def test_password(request, client_board, webdriver, screenshot):
     assert reforis.guide.Workflow(webdriver).verify()  # We should end up on workflow page
 
 
-@pytest.mark.xfail(reason="Guide skip is not possible on password dialogue even when it could be")
 def test_skip_after_password(request, client_board, webdriver):
     """Test first dialog for password configuration."""
     guide = reforis.guide.Guide(webdriver)
@@ -65,7 +64,7 @@ def test_skip_after_password(request, client_board, webdriver):
     guide.notification_close()
 
     guide.skip.click()
-    assert reforis.Overview(webdriver).verify()  # We should end up on workflow page
+    assert reforis.Overview(webdriver).verify()  # We should end up in reForis outside of the Guide
 
 
 # TODO we should verify that it is possible to change language
