@@ -29,8 +29,8 @@ def open_ssh_222(client_board):
 
 def test_attack_unblocked(attacker, board_wan, open_ssh_222):
     """Simply checks if we can access SSH when attacker is not blocked."""
-    attacker.command(f"ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -p 222 root@{board_wan}")
-    attacker.expect_exact(f"root@{board_wan}'s password:")
+    attacker.command(f"ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -p 222 root@{board_wan.network.ip}")
+    attacker.expect_exact(f"root@{board_wan.network.ip}'s password:")
     attacker.ctrl_c()
     attacker.prompt()
 
@@ -38,8 +38,8 @@ def test_attack_unblocked(attacker, board_wan, open_ssh_222):
 def test_attack_blocked(attacker, board_wan, open_ssh_222, dynfw_block_attacker):
     """Checks if we can't access SSH when attacker is blocked."""
     attacker.run(
-        f"ssh -o ConnectTimeout=3 -p 222 root@{board_wan}",
+        f"ssh -o ConnectTimeout=3 -p 222 root@{board_wan.network.ip}",
         exit_code=lambda ec: ec == 255,
         timeout=10,
     )
-    attacker.output == f"ssh: connect to host {board_wan} port 222: Operation timed out\n"
+    attacker.output == f"ssh: connect to host {board_wan.network.ip} port 222: Operation timed out\n"

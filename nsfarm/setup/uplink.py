@@ -4,7 +4,7 @@ import abc
 import ipaddress
 import typing
 
-from .. import cli, lxd
+from .. import cli, lxd, toolbox
 from ._setup import Setup as _Setup
 
 
@@ -27,6 +27,7 @@ class CommonWAN(_Setup):
         self._sh.run(f"uci commit network.{self._interface}")
         if self._restart:
             self._sh.run("/etc/init.d/network restart")
+            self.wait4network()
 
     def revert(self):
         for key, value in self._previous.items():
@@ -37,12 +38,11 @@ class CommonWAN(_Setup):
         self._sh.run(f"uci commit network.{self._interface}")
         if self._restart:
             self._sh.run("/etc/init.d/network restart")
+            # Note: we would like to wait for network here as well but what is the correct check here?
 
-    def wait4ping(self, target_ip: str = "172.16.1.1"):
-        """Uses ping to wait for network to be ready.
-        The default target_ip is the gateway for 'isp-common' container thus pinging up to edge of the Internet.
-        """
-        self._sh.run(f"while ! ping -c1 -w1 '{target_ip}' >/dev/null 2>&1; do true; done")
+    @abc.abstractmethod
+    def wait4network(self):
+        """Wait for uplink to be established."""
 
 
 class DHCPv4(CommonWAN):
@@ -52,9 +52,8 @@ class DHCPv4(CommonWAN):
         super().__init__(shell, interface, restart)
         self._config = {"proto": "dhcp"}
 
-    def wait4route(self):
-        """Waiting for default route to be added by DHCP."""
-        self._sh.run("while ! ip route | grep -q default; do sleep 1; done")
+    def wait4network(self):
+        toolbox.network.wait4route(self._sh)
 
 
 class StaticIPv4(CommonWAN):
@@ -85,6 +84,9 @@ class StaticIPv4(CommonWAN):
             "dns": (dns if dns is not None else gateway).compressed,
         }
 
+    def wait4network(self):
+        toolbox.network.wait4ping(self._sh, self.gateway)
+
 
 class PPPoE(CommonWAN):
     """Configure WAN interface to use PPPoE."""
@@ -103,6 +105,9 @@ class PPPoE(CommonWAN):
             "username": username,
             "password": password,
         }
+
+    def wait4network(self):
+        toolbox.network.wait4route(self._sh)
 
 
 def uplink4isp(image: lxd.Image) -> typing.Optional[typing.Type[CommonWAN]]:

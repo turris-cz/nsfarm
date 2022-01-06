@@ -234,11 +234,10 @@ def fixture_lan1_webclient(lxd_client, device_map):
 def fixture_board_wan(client_board, isp_container):
     """Basic config Internet configuration usable for most of the tests.
     This configures static IP through ips_container.
-    Returns wan IPv4 address of WAN interface.
+    Returns instance of nsfarm.seteup.uplink.StaticIPv4.
     """
     with nsfarm.setup.uplink.StaticIPv4(client_board) as wan:
-        wan.wait4ping()
-        yield wan.network.ip
+        yield wan
 
 
 @pytest.fixture(name="updater_branch", scope="package")

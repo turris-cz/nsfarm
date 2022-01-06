@@ -3,10 +3,11 @@
 Understand this as catch all place for utilities but think first before you add function here. It is always way more
 preferable to add functions to other places than this one.
 """
-from . import alpine, openwrt, tests
+from . import alpine, network, openwrt, tests
 
 __all__ = [
     "alpine",
+    "network",
     "openwrt",
     "tests",
 ]
