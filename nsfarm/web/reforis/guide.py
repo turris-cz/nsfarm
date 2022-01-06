@@ -11,8 +11,8 @@ class Guide(ReForis):
     _ID = "//div[@id='guide-container']"
     _ELEMENTS = {
         **ReForis._ELEMENTS,
-        "next": "//span[text()='Next step']/..",
-        "skip": "//span[text()='Skip guide']/..",
+        "next": "//a[contains(@class, 'guide-controls-button')]",
+        "skip": "//button[contains(@class, 'guide-controls-button') and contains(@class, 'btn-warning')]",
     }
 
     def wait4ready(self, timeout=10):
