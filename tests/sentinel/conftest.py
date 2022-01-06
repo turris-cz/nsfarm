@@ -7,7 +7,7 @@ from nsfarm.setup.updater import Pkglist
 from .test_dynfw import IPSET
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="package", autouse=True)
 def fixture_sentinel(request, board_wan, updater_branch, client_board):
     """Set that we agree with Sentinel EULA."""
     Pkglist(client_board, "datacollect").request(request)
@@ -20,7 +20,7 @@ def fixture_sentinel(request, board_wan, updater_branch, client_board):
     client_board.run("sentinel-reload")
 
 
-@pytest.fixture(scope="module", name="attacker_container")
+@pytest.fixture(scope="package", name="attacker_container")
 def fixture_attacker_container(lxd_client, device_map):
     """Container serving as an attacker from the Internet. In this case it is in the same network as ISP but that is
     intentional as this way we won't poison data that much even if we send them to Sentinel network.
@@ -30,7 +30,7 @@ def fixture_attacker_container(lxd_client, device_map):
         yield container
 
 
-@pytest.fixture(scope="module", name="attacker")
+@pytest.fixture(scope="package", name="attacker")
 def fixture_attacker(attacker_container):
     """Shell access to attacker container."""
     return Shell(attacker_container.pexpect())
