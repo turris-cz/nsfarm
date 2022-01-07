@@ -6,6 +6,12 @@ from ._board import Board
 class Omnia(Board):
     """Turris Omnia board."""
 
+    def _boot_config(self, uboot):
+        uboot.command("gpio input gpio@71_4")
+        if uboot.prompt() == 0:
+            return "sfp"
+        return None
+
     def _legacy_boot(self, uboot, container_cli):
         container_cli.run("cp 'root/boot/zImage' '/var/tftpboot/'")
         container_cli.run("cp -L 'root/boot/dtb' '/var/tftpboot/'")
