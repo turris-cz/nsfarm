@@ -15,7 +15,7 @@
 			entry = <0x800000>;
 			hash-1 { algo = "sha1"; };
 		};
-		dtb-phy {
+		fdt-phy {
 			description = "Flattened Device Tree (metalic WAN)";
 			data = /incbin/("@CWD@/root/boot/armada-385-turris-omnia-phy.dtb");
 			type = "flat_dt";
@@ -23,7 +23,7 @@
 			compression = "none";
 			hash-1 { algo = "sha1"; };
 		};
-		dtb-sfp {
+		fdt-sfp {
 			description = "Flattened Device Tree (SFP WAN)";
 			data = /incbin/("@CWD@/root/boot/armada-385-turris-omnia-sfp.dtb");
 			type = "flat_dt";
@@ -47,13 +47,13 @@
 		common {
 			description = "Turris Omnia";
 			kernel = "kernel";
-			fdt = "dtb-phy";
+			fdt = "fdt-phy";
 			ramdisk = "ramdisk";
 		};
 		sfp {
 			description = "Turris Omnia SFP";
 			kernel = "kernel";
-			fdt = "dtb-sfp";
+			fdt = "fdt-sfp";
 			ramdisk = "ramdisk";
 		};
 	};

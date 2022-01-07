@@ -3,6 +3,7 @@
 import abc
 import logging
 import time
+import typing
 
 import serial
 import serial.tools.miniterm
@@ -83,7 +84,8 @@ class Board(abc.ABC):
             uboot.run(f'setenv bootargs "{" ".join(self.bootargs)}"')
             if not self.config.legacyboot:
                 uboot.run("tftpboot ${kernel_addr_r} 192.168.1.1:image", timeout=240)
-                uboot.sendline("bootm ${kernel_addr_r}")
+                boot_config = self._boot_config(uboot) or None
+                uboot.sendline("bootm ${kernel_addr_r}" + ("#" + boot_config if boot_config is not None else ""))
             else:
                 self._legacy_boot(uboot, ccli)
         # Wait for bootup
@@ -92,6 +94,9 @@ class Board(abc.ABC):
         shell = cli.Shell(self._pexpect)
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
         return shell
+
+    def _boot_config(self, uboot: cli.Uboot) -> typing.Optional[str]:
+        """Select specific boot configuration."""
 
     def _legacy_boot(self, uboot: cli.Uboot, container_cli: cli.Shell):
         """The boot process uses FIT images but not every version of U-Boot supports them. This should perform boot for

@@ -23,6 +23,14 @@
 			compression = "none";
 			hash-1 { algo = "sha1"; };
 		};
+		fdt-usb3phy {
+			description = "Flattened Device Tree blob with remove phy for USB3";
+			data = /incbin/("@CWD@/armada-3720-turris-mox-usb3phy.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash-1 { algo = "sha1"; };
+		};
 		ramdisk {
 			description = "Initial Ramdisk";
 			data = /incbin/("@CWD@/root.cpio");
@@ -40,6 +48,12 @@
 			description = "Turris MOX";
 			kernel = "kernel";
 			fdt = "fdt";
+			ramdisk = "ramdisk";
+		};
+		legacy {
+			description = "Turris MOX on initial stock U-Boot";
+			kernel = "kernel";
+			fdt = "fdt-usb3phy";
 			ramdisk = "ramdisk";
 		};
 	};

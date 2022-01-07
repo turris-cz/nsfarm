@@ -17,6 +17,20 @@ tar -xzf medkit.tar.gz -C root
 ln -sf /sbin/init root/init
 ( cd root && find . | cpio -H newc -o > ../root.cpio )
 
+# Prepare hacked files (sometimes we just need some hacked files)
+case "$board" in
+	mox)
+		cp root/boot/armada-3720-turris-mox.dtb armada-3720-turris-mox-usb3phy.dtb
+		problematic_usb="/soc/internal-regs@d0000000/usb@58000"
+		if fdtget -p armada-3720-turris-mox-usb3phy.dtb "$problematic_usb" 2>/dev/null | grep -q 'phys'; then
+			fdtput -d armada-3720-turris-mox-usb3phy.dtb "$problematic_usb" phys
+			fdtput -d armada-3720-turris-mox-usb3phy.dtb "$problematic_usb" phy-names
+		else
+			echo "The USB3 phy removal hack is not working or is not required!" >&2
+		fi
+		;;
+esac
+
 # Prepare U-Boot FIT image
 sed "s#@CWD@#$(pwd)#g;s#@DESCRIPTION@#$branch:$(date)#g" "/$board.its" > image.its
 mkimage -f image.its image
