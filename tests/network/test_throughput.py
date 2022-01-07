@@ -83,7 +83,7 @@ class TestWAN(ThroughputTest):
     def iperf_server(self, isp_container):
         """Server for test"""
         shell = nsfarm.cli.Shell(isp_container.pexpect())
-        return shell, isp_container.get_ip(["wan"], versions=[4])
+        yield shell, isp_container.get_ip(["wan"], versions=[4])
 
 
 class TestLAN(ThroughputTest):
@@ -93,7 +93,7 @@ class TestLAN(ThroughputTest):
     def iperf_server(self, lan1_client):
         """Server for test"""
         shell = nsfarm.cli.Shell(lan1_client.pexpect())
-        return shell, lan1_client.get_ip(["lan"], versions=[4])
+        yield shell, lan1_client.get_ip(["lan"], versions=[4])
 
 
 @pytest.mark.skip
@@ -104,13 +104,13 @@ class TestRouting(ThroughputTest):
     def iperf_client(self, isp_container):
         """Client is always router."""
         shell = nsfarm.cli.Shell(isp_container.pexpect())
-        return shell, isp_container.get_ip(["wan"], versions=[4])
+        yield shell, isp_container.get_ip(["wan"], versions=[4])
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_server(self, lan1_client):
         """Server for test"""
         shell = nsfarm.cli.Shell(lan1_client.pexpect())
-        return shell, lan1_client.get_ip(["lan"], versions=[4])
+        yield shell, lan1_client.get_ip(["lan"], versions=[4])
 
 
 # TODO: This test needs dynamic lan interface assignment.
@@ -122,10 +122,10 @@ class TestSwitching(ThroughputTest):
     def iperf_client(self, test_client):
         """Client is lan device."""
         shell = nsfarm.cli.Shell(test_client.pexpect())
-        return shell, test_client.get_ip(["lan"], versions=[4])
+        yield shell, test_client.get_ip(["lan"], versions=[4])
 
     @pytest.fixture(scope="class", autouse=True)
     def iperf_server(self, lan1_client):
         """Server for test"""
         shell = nsfarm.cli.Shell(lan1_client.pexpect())
-        return shell, lan1_client.get_ip(["lan"], versions=[4])
+        yield shell, lan1_client.get_ip(["lan"], versions=[4])

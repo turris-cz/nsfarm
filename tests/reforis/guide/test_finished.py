@@ -25,7 +25,7 @@ def fixture_workflow(request, client_board):
         ]
     cmds += [f"uci set foris.wizard.workflow='{request.param}'", "uci commit foris"]
     client_board.run(" && ".join(cmds))
-    return request.param
+    yield request.param
     # The revert is performed by fixture reset_guide
 
 

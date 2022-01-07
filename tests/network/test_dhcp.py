@@ -52,7 +52,7 @@ class DHCPv4Common(abc.ABC):
         """Restarts udhcpc client and returns IPv4 addresses of clients. Uses only 'lan' interface."""
         for client in dhcp_clients:
             client.shell.run("udhcpc -i lan -t 1 -n", None)
-        return [iface.ip for iface in sum([client.get_ip(["lan"], [4]) for client in dhcp_clients], [])]
+        yield [iface.ip for iface in sum([client.get_ip(["lan"], [4]) for client in dhcp_clients], [])]
 
     @pytest.fixture(name="dhcp_clients", scope="class")
     def fixture_dhcp_clients(self, lxd_client, device_map):
@@ -91,9 +91,9 @@ class DHCPv4Common(abc.ABC):
 
     @pytest.fixture(name="static_leases")
     def fixture_static_leases(self, client_board, dhcp_clients):
-        """Setups static leases
+        """setups static leases
 
-        The static addresses are set according to two attributes:
+        the static addresses are set according to two attributes:
             - self.dhcp_static_lease_start
             - self.dhcp_static_amount
         it assignes specified amount of adresses from lease start (including)

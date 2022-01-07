@@ -24,7 +24,7 @@ def fixture_workflow(request, client_board):
             ]
         )
     )
-    return request.param
+    yield request.param
     # The revert is performed by fixture reset_guide
 
 

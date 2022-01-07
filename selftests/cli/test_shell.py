@@ -13,7 +13,7 @@ class Common:
 
     @pytest.fixture(autouse=True)
     def shell(self, container):
-        return Shell(container.pexpect())
+        yield Shell(container.pexpect())
 
     def test_true(self, shell):
         """Simple command that has no effect just to test full process match."""
@@ -37,21 +37,21 @@ class Common:
         yield path
         shell.run(f"rm -f '{path}'")
 
-    def test_txt(self, request, shell, test_file):
+    def test_txt(self, shell, test_file):
         """Check for simple use of txt_write and txt_read."""
         with deterministic_random() as _:
             txt = lorem.paragraph()
         shell.txt_write(test_file, txt)
         assert txt == shell.txt_read(test_file)
 
-    def test_txt_multiline(self, request, shell, test_file):
+    def test_txt_multiline(self, shell, test_file):
         """Check for multiline use of txt_write and txt_read."""
         with deterministic_random() as _:
             txt = lorem.paragraphs(5)  # 5 paragraphs means five lines
         shell.txt_write(test_file, txt)
         assert txt == shell.txt_read(test_file)
 
-    def test_txt_append(self, request, shell, test_file):
+    def test_txt_append(self, shell, test_file):
         """Check if txt_read append option works as expected."""
         txt1 = "First line"
         txt2 = "Second line"
@@ -59,7 +59,7 @@ class Common:
         shell.txt_write(test_file, txt2, append=True)
         assert f"{txt1}\n{txt2}" == shell.txt_read(test_file)
 
-    def test_bin(self, request, shell, test_file):
+    def test_bin(self, shell, test_file):
         """Check if txt_read append option works as expected."""
         data = b"\x01\x02\x03\x04\x05"
         shell.bin_write(test_file, data)
