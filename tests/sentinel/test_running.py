@@ -8,7 +8,7 @@ sentinel_services = [
     "sentinel-dynfw-client",
     "sentinel-proxy",
     "sentinel-minipot",
-    # TODO add sentinel-fwlogs replacing sentinel-nikola once deployed
+    "sentinel-fwlogs",
 ]
 
 
@@ -22,5 +22,5 @@ def test_service_running(client_board, service):
 @pytest.mark.deploy
 @pytest.mark.parametrize("service", sentinel_services)
 def test_service_enabled(client_board, service):
-    """Check if expected processes we need for Sentinel are running and thus all should be correctly configured."""
+    """Check if expected services we need for Sentinel are enabled and thus all should be correctly configured."""
     client_board.run(f"/etc/init.d/{service} enabled")

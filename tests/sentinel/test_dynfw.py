@@ -42,4 +42,4 @@ def test_attack_blocked(attacker, board_wan, open_ssh_222, dynfw_block_attacker)
         exit_code=lambda ec: ec == 255,
         timeout=10,
     )
-    attacker.output == f"ssh: connect to host {board_wan.network.ip} port 222: Operation timed out\n"
+    assert f"port 222: Operation timed out" in attacker.output
