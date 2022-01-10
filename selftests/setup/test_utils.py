@@ -69,8 +69,7 @@ class Common:
         with utils.RootPassword(shell, password) as _:
             shell.run("awk -F: '$1 == \"root\" { print $2 }' /etc/shadow")
             pswd = shell.output.strip()
-            pswd_hash, pswd_salt = pswd.split("$")[1:3]
-            assert pswd == crypt(password, f"${pswd_hash}${pswd_salt}")
+            assert pswd == crypt(password, pswd)
         shell.run("grep '^root::' /etc/shadow")
 
     def test_random_password(self, shell):
@@ -79,8 +78,7 @@ class Common:
         with utils.RootPassword(shell) as root_password:
             shell.run("awk -F: '$1 == \"root\" { print $2 }' /etc/shadow")
             pswd = shell.output.strip()
-            pswd_hash, pswd_salt = pswd.split("$")[1:3]
-            assert pswd == crypt(root_password.password, f"${pswd_hash}${pswd_salt}")
+            assert pswd == crypt(root_password.password, pswd)
         shell.run("grep '^root::' /etc/shadow")
 
     @pytest.fixture(name="ssh_id_rsa")
