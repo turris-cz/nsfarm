@@ -14,6 +14,7 @@ import fcntl
 import io
 import logging
 import os
+import pathlib
 import re
 import select
 import socket
@@ -173,7 +174,9 @@ class Shell(Cli):
         """Sends ^D character."""
         self.send(CTRL_D)
 
-    def txt_read(self, path: str, expect_exist: bool = True) -> typing.Optional[str]:
+    def txt_read(
+        self, path: typing.Union[str, pathlib.PurePosixPath], expect_exist: bool = True
+    ) -> typing.Optional[str]:
         """Read text file via shell.
 
         path: path to text file to read
@@ -187,7 +190,7 @@ class Shell(Cli):
             return None
         return self.output.replace("\r\n", "\n")
 
-    def txt_write(self, path: str, content: str, append: bool = False) -> None:
+    def txt_write(self, path: typing.Union[str, pathlib.PurePosixPath], content: str, append: bool = False) -> None:
         """Write text file via shell.
 
         Note that parent directory has to exist and any file will be rewritten.
@@ -203,7 +206,9 @@ class Shell(Cli):
         if exit_code != 0:
             raise Exception(f"Writing file failed with exit code: {exit_code}")
 
-    def bin_read(self, path: str, expect_exist: bool = True) -> typing.Optional[bytes]:
+    def bin_read(
+        self, path: typing.Union[str, pathlib.PurePosixPath], expect_exist: bool = True
+    ) -> typing.Optional[bytes]:
         """Read binary file via shell encoded in base64.
 
         path: path to file to read
@@ -217,7 +222,7 @@ class Shell(Cli):
             return None
         return base64.b64decode(self.output)
 
-    def bin_write(self, path: str, content: bytes) -> None:
+    def bin_write(self, path: typing.Union[str, pathlib.PurePosixPath], content: bytes) -> None:
         """Write given bytes to binary file in path.
 
         Note that parent directory has to exist and any file will be rewritten.
@@ -318,7 +323,7 @@ class FDLogging:
 
     def __init__(self, fileno: int, logger: logging.Logger, in_level=logging.INFO, out_level=logging.DEBUG):
         self._logger = logger
-        self._fileno = fileno if isinstance(fileno, int) else fileno.fileno()
+        self._fileno = fileno
         self._our_sock, self._user_sock = socket.socketpair()
 
         self._orig_filestatus = fcntl.fcntl(self._fileno, fcntl.F_GETFL)
