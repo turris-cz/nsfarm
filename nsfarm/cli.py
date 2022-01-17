@@ -10,6 +10,7 @@ support for shell and u-boot.  They differ in a way how they handle prompt and m
 #
 import abc
 import base64
+import collections.abc
 import fcntl
 import io
 import logging
@@ -56,6 +57,7 @@ class Cli(abc.ABC):
     """This is generic abstraction on top of pexpect for command line interface."""
 
     _NOCMD: str
+    _PROMPT: re.Pattern
 
     def __init__(self, pexpect_handle, flush=True):
         self._pe = pexpect_handle
@@ -63,26 +65,11 @@ class Cli(abc.ABC):
             self.flush()
 
     def __getattr__(self, name):
-        # Just propagate anything we do not implement to pexect handle
+        """Propage anything we do not implement to pexpect so this can be used as pexpect handle as well."""
         return getattr(self._pe, name)
 
-    @abc.abstractmethod
-    def prompt(self, **kwargs) -> int:
-        """Follow output until prompt is reached and parse it.  Exit code is returned.
-        All keyword arguments are passed to pexpect's expect call.
-        """
-
-    @property
-    @abc.abstractmethod
-    def output(self) -> str:
-        """All output before latest prompt.
-
-        This is everything not matched till prompt is located.  Note that this is for some implementations same as
-        pexpect before but in others it can differ so you should always use this property instead of before.
-        """
-
     def command(self, cmd: str = "") -> None:
-        """Calls pexpect sendline and expect cmd with trailing new line.
+        """Call pexpect sendline and expect cmd with trailing new line.
 
         This is handy when you are communicating with console that echoes input back. This effectively removes sent
         command from output.
@@ -95,25 +82,88 @@ class Cli(abc.ABC):
             self.expect_exact([char, "\r", "\n"])
         self.expect_exact(["\r\n", "\n\r"])
 
+    def prompt(
+        self, pattern: typing.Optional[collections.abc.Sequence[typing.Union[bytes, str, re.Pattern]]] = None, **kwargs
+    ) -> int:
+        """Follow output until prompt is reached and parse it.
+
+        pattern: custom pattern to look for alongside of prompt. This is mostly used to catch errors early without
+          waiting for command to fully timeout to the prompt.
+
+        All unknown keyword arguments are passed to pexpect's expect call.
+
+        Return:
+          Return depends on if pattern is used or not. When no pattern is None then exit code is returned. When pattern
+          is provided then the matched pattern index (0 for prompt) is returned instead.
+        """
+        if pattern is not None:
+            return self.expect(
+                [self._PROMPT]
+                + [
+                    p if isinstance(p, re.Pattern) else re.compile(p if isinstance(p, bytes) else p.encode())
+                    for p in pattern
+                ],
+                **kwargs,
+            )
+        self.expect(self._PROMPT, **kwargs)
+        return self.exit_code
+
+    @property
+    def exit_code(self) -> int:
+        """Provide exit code of the last command.
+
+        This is what prompt returns (if no pattern is provided).
+        """
+        assert self._pe.match.re is self._PROMPT
+        return self._exit_code()
+
+    @abc.abstractmethod
+    def _exit_code(self) -> int:
+        """Guarded implementation of exit_code."""
+
+    @property
+    def output(self) -> str:
+        """All output before latest prompt.
+
+        This is everything not matched till prompt is located.  Note that this is for some implementations same as
+        pexpect before but in others it can differ so you should always use this property instead of before.
+        """
+        assert self._pe.match.re is self._PROMPT
+        return self._output()
+
+    @abc.abstractmethod
+    def _output(self) -> str:
+        """Guarded implementation of output getting."""
+
     def run(
         self, cmd: str = "", exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero, **kwargs
     ) -> typing.Any:
-        """Run given command and follow output until prompt is reached and return exit code with optional automatic
-        check. This is same as if you would call cmd() and prompt() while checking exit_code.
+        """Run given command and follow output until prompt is reached and return exit code with optional check.
+
+        This is same as if you would call cmd() and prompt() while checking exit_code.
 
         cmd: command to be executed
         exit_code: function verifying exit code or None to skip default check
         All other key-word arguments are passed to prompt call.
 
-        Returns result of exit_code function or exit code of command if exit_code is None.
+        Return:
+          Result of exit_code function or exit code of command if exit_code is None.
         """
         self.command(cmd)
         ecode = self.prompt(**kwargs)
         return ecode if exit_code is None else exit_code(ecode)
 
     def match(self, index: int) -> str:
-        """Returns located match in previously matched output."""
+        """Return located match in previously matched output."""
         return self._pe.match.group(index).decode()
+
+    def ctrl_c(self) -> None:
+        """Send ^C character."""
+        self.send(CTRL_C)
+
+    def ctrl_d(self) -> None:
+        """Send ^D character."""
+        self.send(CTRL_D)
 
     def flush(self):
         """Flush all input.
@@ -124,7 +174,7 @@ class Cli(abc.ABC):
         pexpect_flush(self._pe)
 
     def mterm(self, new_prompt: bool = True):
-        """Runs interactive terminal on this cli.
+        """Run interactive terminal on this cli.
 
         new_prompt controls if new command with no effect should be automatically send to trigger print of new prompt in
         terminal. It is just something nice to have but it might not be desirable sometimes so it is possible to disable
@@ -146,13 +196,13 @@ class Shell(Cli):
     """
 
     _NOCMD = ":"
+    _PROMPT = re.compile(b"(\r\n|\n\r)?nsfprompt:([0-9]+)($|#) ")
     _SET_NSF_PROMPT = "export PS1='nsfprompt:$(echo -n $?)\\$ '"
-    _NSF_PROMPT = re.compile(b"(\r\n|\n\r)?nsfprompt:([0-9]+)($|#) ")
     _INITIAL_PROMPTS = [
         re.compile(b"root@[a-zA-Z0-9_-]*:.*($|#) "),  # Common prompt for root user on most Linux distributions
         re.compile(b"(\r\n|\n\r|^).+? ($|#) "),  # Bare Busybox prompt
         re.compile(b"bash-.+?($|#) "),  # Default Bash prompt
-        _NSF_PROMPT,
+        _PROMPT,
     ]
 
     def __init__(self, pexpect_handle: pexpect.spawnbase, flush: bool = True):
@@ -162,17 +212,8 @@ class Shell(Cli):
         # Now sanitize prompt format
         self.run(self._SET_NSF_PROMPT)
 
-    def prompt(self, **kwargs) -> int:
-        self.expect(self._NSF_PROMPT, **kwargs)
+    def _exit_code(self):
         return int(self.match(2))
-
-    def ctrl_c(self) -> None:
-        """Sends ^C character."""
-        self.send(CTRL_C)
-
-    def ctrl_d(self) -> None:
-        """Sends ^D character."""
-        self.send(CTRL_D)
 
     def txt_read(
         self, path: typing.Union[str, pathlib.PurePosixPath], expect_exist: bool = True
@@ -237,34 +278,38 @@ class Shell(Cli):
         if exit_code != 0:
             raise Exception(f"Writing file failed with exit code: {exit_code}")
 
-    @property
-    def output(self) -> str:
+    def _output(self):
         return self._pe.before.decode()
 
 
 class Uboot(Cli):
-    """U-boot prompt support class."""
+    """U-boot prompt support class.
+
+    Warning:
+      Be aware that new_output is captured only when exit_code method is called. This happens automatically if you use
+      prompt method without pattern argument or run method but still be aware that it is not fully automatic as with
+      other Cli implementations.
+    """
 
     _NOCMD = ";"
-    _PROMPT = "(\r\n|\n\r|^)=> "
+    _PROMPT = re.compile(b"(\r\n|\n\r|^)=> ")
     _EXIT_CODE_ECHO = "echo $?"
 
     def __init__(self, pexpect_handle, flush=True):
         super().__init__(pexpect_handle, flush=flush)
-        self._output = ""
+        self.__output = ""
         self.run("true")  # Check if we are in U-boot prompt
 
-    def prompt(self, **kwargs):
-        self.expect(self._PROMPT, **kwargs)
-        self._output = self._pe.before.decode()
-        # Check exit code
+    def _exit_code(self):
+        # Collect output before we check for exit code
+        self.__output = self._pe.before.decode()
+        # We have to use dedicated command in U-Boot to check exit code.
         self.command(self._EXIT_CODE_ECHO)
-        self.expect(self._PROMPT, **kwargs)
+        self.expect(self._PROMPT)
         return int(self._pe.before.decode())
 
-    @property
-    def output(self):
-        return self._output
+    def _output(self):
+        return self.__output
 
 
 class LineBytesAggregate:

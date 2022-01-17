@@ -30,6 +30,14 @@ class Common:
         shell.run(" && ".join(["true"] * 20) + " && echo Content")
         assert shell.output == "Content"
 
+    def test_prompt_pattern(self, shell):
+        """Verify that we break early for provided patterns in prompt method."""
+        shell.command("echo 'Terminate me..' && sleep 120")
+        assert shell.prompt(["Terminate me.."]) == 1
+        shell.ctrl_c()
+        assert shell.prompt(["Terminate me.."]) == 0
+        assert shell.exit_code == 130  # 128+SIGINT is exit code for termination in shells such as ash or bash
+
     @pytest.fixture
     def test_file(self, shell):
         """This provides test file path that is removed after test finishes."""
