@@ -37,9 +37,5 @@ def test_attack_unblocked(attacker, board_wan, open_ssh_222):
 
 def test_attack_blocked(attacker, board_wan, open_ssh_222, dynfw_block_attacker):
     """Checks if we can't access SSH when attacker is blocked."""
-    attacker.run(
-        f"ssh -o ConnectTimeout=3 -p 222 root@{board_wan.network.ip}",
-        exit_code=lambda ec: ec == 255,
-        timeout=10,
-    )
+    assert attacker.run(f"ssh -o ConnectTimeout=3 -p 222 root@{board_wan.network.ip}", check=False, timeout=10) == 255
     assert f"port 222: Operation timed out" in attacker.output

@@ -15,22 +15,18 @@ RWS0FA1Nun7JDt0L8SjRsDRJGDvUCdDdfs21feiW+qpGHNMhVZ930hky
 
 
 def pkgupdate(shell: cli.Shell, fatal: bool = False) -> None:
-    """This runs pkgupdate and waits for termination.
+    """Run pkgupdate and waits for termination.
 
     fatal: The updater commonly reports failure because some specific package failed to execute correctly. We are not
         commonly interested in that so we only report that as warning in default. Making that fatal raises exception
         instead.
     """
-
-    def exit_code_handle(exit_code):
-        # TODO we should investigate output to detect updater failures over package failures
-        if exit_code != 0:
-            if fatal:
-                raise Exception(f"pkgupdate exited with exit code: {exit_code}")
-            warnings.warn(f"pkgupdate exited with exit code: {exit_code}")
-
     # Note: We are running from initram so we do not want to do reboot as it would wipe our state.
-    shell.run("pkgupdate --batch --no-immediate-reboot", exit_code=exit_code_handle, timeout=240)
+    if shell.run("pkgupdate --batch --no-immediate-reboot", check=False, timeout=240) != 0:
+        # TODO we should investigate output to detect updater failures over package failures
+        if fatal:
+            raise Exception(f"pkgupdate exited with exit code: {shell.exit_code}")
+        warnings.warn(f"pkgupdate exited with exit code: {shell.exit_code}")
     # TODO possibly add option to also reset changelog file (/usr/share/updater/changelog) after execution
 
 

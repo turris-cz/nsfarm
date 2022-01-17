@@ -55,7 +55,7 @@ class TestHTTP(GenericMinipot):
 
     @staticmethod
     def access(attacker_container, attacker, board_wan_ip):
-        attacker.run(f"wget 'http://{board_wan_ip}'", exit_code=lambda ec: ec == 1)
+        assert attacker.run(f"wget 'http://{board_wan_ip}'", check=False) == 1
         assert "wget: server returned error: HTTP/1.1 401 Unauthorized" in attacker.output
 
 

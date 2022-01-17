@@ -44,15 +44,6 @@ def pexpect_flush(pexpect_handle):
             return
 
 
-def run_exit_code_zero(exit_code):
-    """Default handler for Cli.run exit_code parameter.
-    This checks if exit code is zero and raises exception if it is not.
-    """
-    if exit_code != 0:
-        raise Exception(f"Command exited with non-zero code: {exit_code}")
-    return 0
-
-
 class Cli(abc.ABC):
     """This is generic abstraction on top of pexpect for command line interface."""
 
@@ -135,23 +126,23 @@ class Cli(abc.ABC):
     def _output(self) -> str:
         """Guarded implementation of output getting."""
 
-    def run(
-        self, cmd: str = "", exit_code: typing.Optional[typing.Callable[[int], None]] = run_exit_code_zero, **kwargs
-    ) -> typing.Any:
+    def run(self, cmd: str = "", check: bool = True, **kwargs) -> typing.Any:
         """Run given command and follow output until prompt is reached and return exit code with optional check.
 
-        This is same as if you would call cmd() and prompt() while checking exit_code.
+        This is same as if you would call command() and prompt() while checking exit_code.
 
         cmd: command to be executed
-        exit_code: function verifying exit code or None to skip default check
+        check: check if the exit code is zero
         All other key-word arguments are passed to prompt call.
 
         Return:
-          Result of exit_code function or exit code of command if exit_code is None.
+          Result of exit_code function.
         """
         self.command(cmd)
         ecode = self.prompt(**kwargs)
-        return ecode if exit_code is None else exit_code(ecode)
+        if check:
+            assert ecode == 0
+        return ecode
 
     def match(self, index: int) -> str:
         """Return located match in previously matched output."""
@@ -225,7 +216,7 @@ class Shell(Cli):
 
         Returns string containing text of the file or None if file can't be read in some cases.
         """
-        if self.run(f"cat '{path}'", exit_code=None) != 0:
+        if self.run(f"cat '{path}'", check=False) != 0:
             if expect_exist:
                 raise Exception(f"Can't get file: {path}")
             return None
@@ -257,7 +248,7 @@ class Shell(Cli):
 
         Returns bytes with content of binary file from the path or None if file can't be read in some cases.
         """
-        if self.run(f"base64 '{path}'", exit_code=None) != 0:
+        if self.run(f"base64 '{path}'", check=False) != 0:
             if expect_exist:
                 raise Exception(f"Can't get file: {path}")
             return None

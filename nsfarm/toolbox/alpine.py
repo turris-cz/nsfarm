@@ -4,4 +4,4 @@
 
 def network_connect(shell, target: str, port: int, udp: bool = False):
     """Basic netcat connection - only connects."""
-    return shell.run(f"nc -vz{'u' if udp else ''} {target} {port}", None) == 0
+    return shell.run(f"nc -vz{'u' if udp else ''} {target} {port}", check=False) == 0

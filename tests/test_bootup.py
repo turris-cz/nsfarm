@@ -144,4 +144,4 @@ class TestNoInternetAccess:
         It is reasonable assumption that without default route there is no Internet access so it should be enough to
         check if there is no default route.
         """
-        assert client_board.run(f"ip -{ipv} route | grep -F 'default via'", None) == 1
+        assert client_board.run(f"ip -{ipv} route | grep -F 'default via'", check=False) == 1

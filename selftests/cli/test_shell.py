@@ -21,7 +21,7 @@ class Common:
 
     def test_false(self, shell):
         """Simple command that has no effect but fails with known exit code."""
-        assert shell.run("false", None) == 1
+        assert shell.run("false", check=False) == 1
 
     def test_long_command(self, shell):
         """The long commands are broken to multiple lines when it is echoed to terminal. This verifies that we can

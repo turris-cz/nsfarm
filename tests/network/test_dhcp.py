@@ -51,7 +51,7 @@ class DHCPv4Common(abc.ABC):
     def fixture_ip_addresses(self, dhcp_clients):
         """Restarts udhcpc client and returns IPv4 addresses of clients. Uses only 'lan' interface."""
         for client in dhcp_clients:
-            client.shell.run("udhcpc -i lan -t 1 -n", None)
+            client.shell.run("udhcpc -i lan -t 1 -n", check=False)
         yield [iface.ip for iface in sum([client.get_ip(["lan"], [4]) for client in dhcp_clients], [])]
 
     @pytest.fixture(name="dhcp_clients", scope="class")
