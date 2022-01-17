@@ -73,27 +73,39 @@ class Board(abc.ABC):
 
         Returns instance of cli.Shell
         """
-        # First get U-Boot prompt
-        uboot = self.uboot()
-        # Now load image from TFTP
         with Container(lxd_client, "boot", self.config.device_map()) as cont:
             ccli = cli.Shell(cont.pexpect())
             ccli.run(f"prepare_turris_image '{self.config.board}' '{os_branch}'", timeout=120)
-            uboot.run("setenv ipaddr 192.168.1.142")
-            uboot.run("setenv serverip 192.168.1.1")
-            uboot.run(f'setenv bootargs "{" ".join(self.bootargs)}"')
-            if not self.config.legacyboot:
-                uboot.run("tftpboot ${kernel_addr_r} 192.168.1.1:image", timeout=240)
-                boot_config = self._boot_config(uboot) or None
-                uboot.sendline("bootm ${kernel_addr_r}" + ("#" + boot_config if boot_config is not None else ""))
-            else:
-                self._legacy_boot(uboot, ccli)
+            while not self._bootup(ccli):
+                pass
         # Wait for bootup
         self._pexpect.expect_exact("Router Turris successfully started.", timeout=240)
         self._pexpect.sendline("")
         shell = cli.Shell(self._pexpect)
         shell.run("sysctl -w kernel.printk='0 4 1 7'")  # disable kernel print to not confuse console flow
         return shell
+
+    def _bootup(self, ccli):
+        """This is pretty much just Turris Mox hack.
+
+        Turris Mox sometimes fails to bring ethernet device up in the U-Boot. The reboot solves it. It affects only
+        U-Boot but it simply breaks whole test runs. This implements the whole boot in an infinite while loop so we can
+        simply reboot board and attempt all uboot operations again.
+        """
+        # Get image from TFTP
+        uboot = self.uboot()
+        uboot.run("setenv ipaddr 192.168.1.142")
+        uboot.run("setenv serverip 192.168.1.1")
+        uboot.run(f'setenv bootargs "{" ".join(self.bootargs)}"')
+        if not self.config.legacyboot:
+            uboot.command("tftpboot ${kernel_addr_r} 192.168.1.1:image")
+            if uboot.prompt(["bad rx status"], timeout=240) != 0:
+                return False  # Attempt again
+            boot_config = self._boot_config(uboot) or None
+            uboot.sendline("bootm ${kernel_addr_r}" + ("#" + boot_config if boot_config is not None else ""))
+        else:
+            self._legacy_boot(uboot, ccli)
+        return True
 
     def _boot_config(self, uboot: cli.Uboot) -> typing.Optional[str]:
         """Select specific boot configuration."""
