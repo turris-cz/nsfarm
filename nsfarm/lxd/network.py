@@ -4,7 +4,8 @@ import socket
 
 
 def _find_free_port(proto):
-    """Simple function that gives us random free port.
+    """Provide random unused port.
+
     The possible issue is that it might be taken in the meantime but because it is random port that is less likely.
     """
     socktp = {"tcp": socket.SOCK_STREAM, "udp": socket.SOCK_DGRAM}[proto]
@@ -28,17 +29,17 @@ class NetworkInterface:
 
     @property
     def hwaddr(self):
-        """returns hardware address/mac of interfaces in a dictionary."""
+        """Return hardware address/mac of interfaces in a dictionary."""
         return {interface: self._network[interface]["hwaddr"] for interface in self._network}
 
     @property
     def hostname(self):
-        """returns hostname of interfaces in a dictionary."""
+        """Return hostname of interfaces in a dictionary."""
         return {interface: self._network[interface]["host_name"] for interface in self._network}
 
     @property
     def addresses(self):
-        """returns ip addresses of interfaces in a dictionary of lists, containing ipaddress.IPvXAddresses"""
+        """Return ip addresses of interfaces in a dictionary of lists, containing ipaddress.IPvXAddresses."""
         interface_addrs = {}
         for interface in self._network:
             interface_addrs[interface] = []
@@ -49,11 +50,12 @@ class NetworkInterface:
 
     @property
     def interfaces(self):
-        """returns list of available interfaces"""
+        """Return list of available interfaces."""
         return self._network.keys()
 
     def proxy_open(self, proto="tcp", address="127.0.0.1", port="80"):
         """Proxy socket connection through container.
+
         Warning: This supports only TCP and UDP sockets right now!
         Returns local port number service is proxied to.
         """
@@ -77,6 +79,7 @@ class NetworkInterface:
     @contextlib.contextmanager
     def proxy(self, *args, **kwargs):
         """Open proxy for limited context.
+
         This is using proxy_open and proxy_close.
         """
         port = self.proxy_open(*args, **kwargs)

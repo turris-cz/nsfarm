@@ -1,7 +1,5 @@
-"""Containers management.
-"""
+"""Containers management."""
 import collections.abc
-import functools
 import logging
 import os
 import typing
@@ -118,7 +116,8 @@ class Container:
 
     @property
     def shell(self):
-        """Extension method that provies access to shell in container.
+        """Extension method that provides access to shell in container.
+
         It caches result so after first call it always returns same instance of Shell.
         This is intended mostly as easy to reach system console. The prefered way of performing tests trough container
         is using pexpect() method as that spawns multiple separate shell instances.
@@ -132,7 +131,7 @@ class Container:
         interfaces: typing.Optional[typing.Container] = None,
         versions: typing.Container = frozenset([4, 6]),
     ) -> list:
-        """returns list of ipaddress.IP#Interface filtered according to parameters.
+        """Return list of ipaddress.IP#Interface filtered according to parameters.
 
         interfaces: Container containing string names of interfaces from which ip addresses will be obtained
         versions: Container containing integer values of IP versions to be obtained
@@ -163,13 +162,14 @@ class Container:
 
     @property
     def image(self) -> Image:
-        """Allows access to image used for this container."""
+        """Allow access to image used for this container."""
         return self._image
 
     @property
     def device_map(self) -> dict:
-        """Provides access to device map this container is using. Note that changes performed after container
-        preparation have no effect.
+        """Provide access to device map this container is using.
+
+        Note that changes performed after container preparation have no effect.
         """
         if self._device_map is None:
             return {}
@@ -177,10 +177,10 @@ class Container:
 
     @property
     def devices(self) -> dict[str, Device]:
-        """Dict of passed devices from host."""
+        """Provide dictionary of passed devices from host."""
         return self._devices
 
     @property
     def network(self) -> typing.Optional[NetworkInterface]:
-        """network representation, that represents all data connections."""
+        """Provide network representation, that represents all data connections."""
         return self._network

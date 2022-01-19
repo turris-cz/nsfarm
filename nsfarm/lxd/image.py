@@ -1,5 +1,4 @@
-"""Images management.
-"""
+"""Images management."""
 import functools
 import hashlib
 import io
@@ -82,7 +81,7 @@ class Image:
 
     @functools.lru_cache(maxsize=1)
     def hash(self) -> str:
-        """Identifying Hash for latest image.
+        """Provide hash uniquely identifying latest image.
 
         This is unique identifier generated from image sources and used to check if image can be reused or not.
         """
@@ -131,7 +130,8 @@ class Image:
         return f"nsfarm/{self.name}/{img_hash}"
 
     def devices(self) -> typing.Dict[str, Device]:
-        """Returns tuple with additional devices to be included in container.
+        """Return tuple with additional devices to be included in container.
+
         These are not-exclusive devices.
         """
         devices = {}
@@ -226,7 +226,7 @@ class Image:
 
     @staticmethod
     def architecture():
-        """An appropriate host architecture for image."""
+        """Select appropriate host architecture for image."""
         arch = platform.machine()
         archmap = {
             "x86_64": "amd64",

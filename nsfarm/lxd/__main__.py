@@ -118,7 +118,7 @@ def parse_deltatime(spec):
 
 
 def op_clean(args, _):
-    """Handler for command line operation clean"""
+    """Handler for command line operation clean."""
     removed = []
     if args.images or not args.containers:
         removed += utils.clean_images(args.DELTA, dry_run=args.dry_run)
@@ -130,7 +130,7 @@ def op_clean(args, _):
 
 
 def op_bootstrap(args, upper_parser):
-    """Handler for command line operation bootstrap"""
+    """Handler for command line operation bootstrap."""
     if not args.IMG and not args.all:
         upper_parser.print_usage()
         sys.exit(1)
@@ -143,7 +143,7 @@ def op_bootstrap(args, upper_parser):
 
 
 def op_inspect(args, upper_parser):
-    """Handler for command line operation inspect"""
+    """Handler for command line operation inspect."""
     kwargs = {}
     if args.internet:
         kwargs["internet"] = True
