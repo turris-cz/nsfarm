@@ -4,7 +4,7 @@ import abc
 import ipaddress
 import typing
 
-from .. import cli
+from .. import cli, lxd
 from ._setup import Setup as _Setup
 
 
@@ -103,3 +103,16 @@ class PPPoE(CommonWAN):
             "username": username,
             "password": password,
         }
+
+
+def uplink4isp(image: lxd.Image) -> typing.Optional[typing.Type[CommonWAN]]:
+    """Select an appropriate uplink for given ISP image."""
+    mapper: dict[str, typing.Type[CommonWAN]] = {
+        "isp-dhcp": DHCPv4,
+        "isp-pppoe": PPPoE,
+        "isp-common": StaticIPv4,
+    }
+    for imgname, uplink in mapper.items():
+        if image.name == imgname or image.is_child_of(imgname):
+            return uplink
+    return None

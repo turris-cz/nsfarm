@@ -152,6 +152,16 @@ class Image:
         """
         return self._lxd.images.exists(self.alias(img_hash), alias=True)
 
+    def is_child_of(self, image: typing.Union[str, "Image"]) -> bool:
+        """Check if image is child of given NSFarm's image."""
+        imgname = image.name if isinstance(image, Image) else image
+        wimage = self._parent
+        while isinstance(wimage, Image):
+            if wimage.name == imgname:
+                return True
+            wimage = wimage._parent
+        return False
+
     def prepare(self):
         """Prepare image. It creates it if necessary and populates lxd_image attribute."""
         if self.lxd_image is not None:

@@ -64,14 +64,14 @@ def parser(upper_parser):
         metavar="BRANCH",
     )
     boot.add_argument(
-        "--no-client",
-        action="store_true",
-        help="Do not start client container alongside the boot to allow simple access on board.",
+        "--client",
+        default="client",
+        help="Provide given client container alongside the boot to allow simple access on board. It defaults to 'client'. You can pass empty argument to not spawn any container.",
     )
     boot.add_argument(
-        "--no-isp",
-        action="store_true",
-        help="Do not provide ISP container with DHCP server on WAN.",
+        "--isp",
+        default="isp-dhcp",
+        help="Provide given ISP container on WAN, defaults to 'isp-dhcp'. To disable default you can pass empty string.",
     )
     boot.add_argument(
         "--default",
@@ -133,17 +133,17 @@ def op_uboot(args, upper_parser):
 
 @contextlib.contextmanager
 def boot_isp(args, lxd_client, target):
-    if args.no_isp:
+    if not args.isp:
         return
-    with lxd.Container(lxd_client, "isp-dhcp", target.device_map()) as isp:
+    with lxd.Container(lxd_client, args.isp, target.device_map()) as isp:
         yield isp
 
 
 @contextlib.contextmanager
 def boot_client(args, lxd_client, target):
-    if args.no_client:
+    if not args.client:
         return
-    with lxd.Container(lxd_client, "client", {"net:lan": target.device_map()["net:lan1"]}) as client:
+    with lxd.Container(lxd_client, args.client, {"net:lan": target.device_map()["net:lan1"]}) as client:
         yield client
 
 
@@ -164,7 +164,8 @@ def op_boot(args, parser):
                 setup.utils.RootPassword(shell, "turris").revert_not_needed()
                 if isp is not None:
                     isp.shell.run("wait4network")
-                    setup.uplink.DHCPv4(shell).revert_not_needed()
+                    if (uplink := setup.uplink.uplink4isp(isp.image)) is not None:
+                        uplink(shell).revert_not_needed()
                 if client is not None:
                     setup.utils.SSHKey(client.shell, shell).revert_not_needed()
             shell.mterm()
