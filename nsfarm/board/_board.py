@@ -96,6 +96,8 @@ class Board(abc.ABC):
         uboot = self.uboot()
         uboot.run("setenv ipaddr 192.168.1.142")
         uboot.run("setenv serverip 192.168.1.1")
+        uboot.run("setenv tftpblocksize 1468")
+        uboot.run("setenv tftpwindowsize 2048")
         uboot.run(f'setenv bootargs "{" ".join(self.bootargs)}"')
         if not self.config.legacyboot:
             uboot.command("tftpboot ${kernel_addr_r} 192.168.1.1:image")
