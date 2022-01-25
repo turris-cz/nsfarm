@@ -15,7 +15,7 @@ class Guide(ReForis):
         "skip": "//button[contains(@class, 'guide-controls-button') and contains(@class, 'btn-warning')]",
     }
 
-    def wait4ready(self, timeout=10):
+    def wait4ready(self, timeout=60):
         """Wait for ready to go to next step."""
         self.next.wait(ec.element_has_class, "disabled", True, timeout=timeout)
 
