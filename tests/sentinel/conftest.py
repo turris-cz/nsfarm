@@ -3,6 +3,7 @@ import pytest
 from nsfarm.cli import Shell
 from nsfarm.lxd import Container
 from nsfarm.setup.updater import Pkglist
+from nsfarm.setup.openwrt import Service
 
 from .test_dynfw import IPSET
 
@@ -39,6 +40,8 @@ def fixture_attacker(attacker_container):
 @pytest.fixture(scope="function", name="dynfw_block_attacker")
 def fixture_dynfw_block_attacker(client_board):
     """Add our attacker container to ipset managed by dynfw. This way we can test firewall settings for dynfw."""
-    client_board.run(f"ipset add '{IPSET}' 172.16.42.42")
-    yield
-    client_board.run(f"ipset del '{IPSET}' 172.16.42.42")
+    # Note: We disable dynfw client so we do not interfere with it.
+    with Service(client_board, "sentinel-dynfw-client", running=False):
+        client_board.run(f"ipset add '{IPSET}' 172.16.42.42")
+        yield
+        client_board.run(f"ipset del '{IPSET}' 172.16.42.42 || true")
