@@ -18,7 +18,7 @@ from nsfarm.setup import openwrt
 # TODO Add some exclusive locking for these tests between NSFarm instances to ensure that we won't fail these because we
 # are running too much instances in paralel of this.
 
-BITS_IN_MBIT = 10 ** 6  # bits in megabits - for conversion purposes
+BITS_IN_MBIT = 10**6  # bits in megabits - for conversion purposes
 TEST_TIME = 60  # seconds of time to be tested
 TEST_INTERVAL = 10  # seconds of measurement intervals
 

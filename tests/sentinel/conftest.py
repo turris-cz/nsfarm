@@ -2,8 +2,8 @@ import pytest
 
 from nsfarm.cli import Shell
 from nsfarm.lxd import Container
-from nsfarm.setup.updater import Pkglist
 from nsfarm.setup.openwrt import Service
+from nsfarm.setup.updater import Pkglist
 
 from .test_dynfw import IPSET
 

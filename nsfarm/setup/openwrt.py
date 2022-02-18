@@ -4,8 +4,7 @@ These are basically utilities that are specific for OpenWrt distribution.
 """
 import re
 
-from .. import cli
-from .. import toolbox
+from .. import cli, toolbox
 from ._setup import Setup as _Setup
 
 

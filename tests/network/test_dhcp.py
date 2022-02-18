@@ -216,7 +216,7 @@ class TestDHCPv4Leasetime(DHCPv4Common):
     dhcp_limit = 5
     dhcp_timeout = 60  # seconds
 
-    @pytest.mark.parametrize("leasetime", [122, 2 ** 32 - 1])  # minimum leasetime  # maximum leasetime
+    @pytest.mark.parametrize("leasetime", [122, 2**32 - 1])  # minimum leasetime  # maximum leasetime
     def test_dhcp_leasetime(self, client_board, dhcp_clients, leasetime):
         """Testing leasetime using dhcp client.
 

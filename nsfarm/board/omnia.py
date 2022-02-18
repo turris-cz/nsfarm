@@ -1,5 +1,4 @@
-"""Board definitions specific for Turris Omnia
-"""
+"""Board definitions specific for Turris Omnia."""
 from ._board import Board
 
 

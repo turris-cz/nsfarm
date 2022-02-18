@@ -1,5 +1,4 @@
-"""Board definitions specific for Turris Mox
-"""
+"""Board definitions specific for Turris Mox."""
 from ._board import Board
 
 

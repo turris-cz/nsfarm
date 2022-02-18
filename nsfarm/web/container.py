@@ -55,10 +55,12 @@ class Container(LXDContainer):
     @contextlib.contextmanager
     def webdriver(self, browser: str = "firefox") -> selenium.webdriver.remote.webdriver.WebDriver:
         """Returns new selenium instance for specified browser.
+
         The currently supported browsers are:
         * firefox
         * chrome
         """
+        assert self.network is not None
         with self.network.proxy(port=DRIVER_PORTS[browser]) as localport:
             self.shell.run(f"wait4tcp '{DRIVER_PORTS[browser]}'")
             webdriver = selenium.webdriver.remote.webdriver.WebDriver(f"http://127.0.0.1:{localport}")

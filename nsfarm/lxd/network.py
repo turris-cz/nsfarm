@@ -1,6 +1,8 @@
+"""Network abstraction for LXD container."""
 import contextlib
 import ipaddress
 import socket
+import typing
 
 
 def _find_free_port(proto):
@@ -12,6 +14,9 @@ def _find_free_port(proto):
     with contextlib.closing(socket.socket(socket.AF_INET, socktp)) as sock:
         sock.bind(("", 0))
         return sock.getsockname()[1]
+
+
+ProtocolTypeStr = typing.Union[typing.Literal["tcp"], typing.Literal["udp"]]
 
 
 class NetworkInterface:
@@ -28,19 +33,19 @@ class NetworkInterface:
         return self._container.lxd_container.state().network
 
     @property
-    def hwaddr(self):
+    def hwaddr(self) -> dict[str, str]:
         """Return hardware address/mac of interfaces in a dictionary."""
         return {interface: self._network[interface]["hwaddr"] for interface in self._network}
 
     @property
-    def hostname(self):
+    def hostname(self) -> dict[str, str]:
         """Return hostname of interfaces in a dictionary."""
         return {interface: self._network[interface]["host_name"] for interface in self._network}
 
     @property
-    def addresses(self):
+    def addresses(self) -> dict[str, list[typing.Union[ipaddress.IPv4Interface, ipaddress.IPv6Interface]]]:
         """Return ip addresses of interfaces in a dictionary of lists, containing ipaddress.IPvXAddresses."""
-        interface_addrs = {}
+        interface_addrs: dict[str, list[typing.Union[ipaddress.IPv4Interface, ipaddress.IPv6Interface]]] = {}
         for interface in self._network:
             interface_addrs[interface] = []
             for address in self._network[interface]["addresses"]:
@@ -49,11 +54,16 @@ class NetworkInterface:
         return interface_addrs
 
     @property
-    def interfaces(self):
+    def interfaces(self) -> list[str]:
         """Return list of available interfaces."""
         return self._network.keys()
 
-    def proxy_open(self, proto="tcp", address="127.0.0.1", port="80"):
+    def proxy_open(
+        self,
+        proto: ProtocolTypeStr = "tcp",
+        address: typing.Union[str, ipaddress.IPv4Address, ipaddress.IPv6Address] = "127.0.0.1",
+        port: int = 80,
+    ) -> int:
         """Proxy socket connection through container.
 
         Warning: This supports only TCP and UDP sockets right now!
@@ -70,14 +80,14 @@ class NetworkInterface:
         self._container.lxd_container.save(wait=True)
         return freeport
 
-    def proxy_close(self, localport, proto="tcp"):
+    def proxy_close(self, localport: int, proto: ProtocolTypeStr = "tcp"):
         """Close existing proxy."""
         self._container._logger.debug("Closing proxy %s port: %d", proto, localport)
         del self._container.lxd_container.devices[f"proxy-{proto}-{localport}"]
         self._container.lxd_container.save(wait=True)
 
     @contextlib.contextmanager
-    def proxy(self, *args, **kwargs):
+    def proxy(self, *args, **kwargs) -> typing.Generator[int, None, None]:
         """Open proxy for limited context.
 
         This is using proxy_open and proxy_close.

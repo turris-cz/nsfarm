@@ -1,13 +1,9 @@
-"""Board definitions specific for Turris 1.x
-"""
+"""Board definitions specific for Turris 1.x."""
 from ._board import Board
 
 
 class Turris1x(Board):
     """Turris 1.0 and 1.1 boards."""
-
-    def _board_bootup(self, uboot):
-        raise NotImplementedError
 
     @property
     def wan(self):
@@ -15,7 +11,7 @@ class Turris1x(Board):
 
     @property
     def lan1(self):
-        return "lan0"
+        return "lan1"
 
     @property
     def lan2(self):

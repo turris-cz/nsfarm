@@ -1,5 +1,6 @@
 """Containers management."""
 import collections.abc
+import ipaddress
 import logging
 import os
 import typing
@@ -130,7 +131,7 @@ class Container:
         self,
         interfaces: typing.Optional[typing.Container] = None,
         versions: typing.Container = frozenset([4, 6]),
-    ) -> list:
+    ) -> list[typing.Union[ipaddress.IPv4Interface, ipaddress.IPv6Interface]]:
         """Return list of ipaddress.IP#Interface filtered according to parameters.
 
         interfaces: Container containing string names of interfaces from which ip addresses will be obtained
@@ -138,12 +139,13 @@ class Container:
 
         Returns a list of ip addresses as IPv4Address or IPv6Address classes
         """
-        ips = []
-        ifs_dict = self.network.addresses
-        for iface in interfaces if interfaces else self.network.interfaces:
-            for address in ifs_dict[iface]:
-                if address.version in versions:
-                    ips.append(address)
+        ips: list[typing.Union[ipaddress.IPv4Interface, ipaddress.IPv6Interface]] = []
+        if self.lxd_container is not None:
+            ifs_dict = self._network.addresses
+            for iface in interfaces if interfaces else self._network.interfaces:
+                for address in ifs_dict[iface]:
+                    if address.version in versions:
+                        ips.append(address)
         return ips
 
     def __enter__(self):
