@@ -18,8 +18,7 @@ from . import mark
     [
         "crond",
         "dnsmasq",
-        pytest.param("kresd", marks=mark.kresd),
-        pytest.param("unbound", marks=mark.unbound),
+        "kresd",
         "lighttpd",
         "mosquitto",
         "netifd",

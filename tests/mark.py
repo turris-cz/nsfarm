@@ -16,10 +16,6 @@ not_turris1x = pytest.mark.not_board("turris1x")
 not_omnia = pytest.mark.not_board("omnia")
 not_mox = pytest.mark.not_board("mox")
 
-# Default DNS resolver
-kresd = not_turris1x
-unbound = only_turris1x
-
 # Board capabalities
 rainbow = pytest.mark.board("omnia", "turrix1x")
 low_ram = pytest.mark.board("mox")
