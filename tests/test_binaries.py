@@ -11,6 +11,7 @@ BINARIES = {
     "curl": None,
     "find": "--help",
     "grep": "--help",
+    "python3": None
 }
 
 
